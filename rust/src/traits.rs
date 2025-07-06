@@ -5,9 +5,9 @@ use serde::Serialize;
 
 #[async_trait]
 pub trait PubTrait {
-    async fn publish<T>(&self, obj: &T) -> Result<(), Error>
-    where
-        T: Serialize + Send + Sync;
+  async fn publish<T>(&self, obj: &T) -> Result<(), Error>
+  where
+    T: Serialize + Send + Sync;
 }
 
 pub trait SubTrait<T>: Stream<Item = Result<T, Error>> + Send {}
