@@ -45,7 +45,7 @@ where
     let stream = messages.then(move |msg_res| {
       let format = format;
       async move {
-        let msg = msg_res.map_err(|e| Error::Other(e.to_string()))?;
+        let msg = msg_res?;
         let data = match format {
           Format::MessagePack => {
             rmp_serde::from_slice::<T>(&msg.message.payload)

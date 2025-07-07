@@ -14,6 +14,8 @@ pub enum Error {
   Publish(#[from] async_nats::jetstream::context::PublishError),
   #[error("JetStream stream error: {0}")]
   Stream(#[from] async_nats::jetstream::consumer::StreamError),
+  #[error("JetStream message error: {0}")]
+  Message(#[from] async_nats::jetstream::consumer::pull::MessagesError),
   #[error("JSON error: {0}")]
   Json(#[from] serde_json::Error),
   #[error("MessagePack encode error: {0}")]
