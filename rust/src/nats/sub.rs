@@ -19,31 +19,29 @@ where
 {
   pub async fn new(
     js: jetstream::Context,
+    name: impl Into<String> + Clone,
+    subjects: Vec<impl Into<String>>,
     format: Format,
+    durable_name: Option<impl Into<String>>,
   ) -> Result<Self, Error> {
     let stream = js
       .get_or_create_stream(StreamConfig {
-        name: "OBJECTS".to_string(),
-        subjects: vec!["object_transfer".to_string()],
+        name: name.clone().into(),
+        subjects: subjects.into_iter().map(Into::into).collect(),
         ..Default::default()
       })
-      .await
-      .map_err(|e| Error::Other(e.to_string()))?;
+      .await?;
     let consumer = stream
       .get_or_create_consumer(
-        "object_consumer",
+        name.into().as_str(),
         PullConfig {
-          durable_name: Some("object_consumer".to_string()),
+          durable_name: durable_name.map(Into::into),
           ..Default::default()
         },
       )
-      .await
-      .map_err(|e| Error::Other(e.to_string()))?;
+      .await?;
 
-    let messages = consumer
-      .messages()
-      .await
-      .map_err(|e| Error::Other(e.to_string()))?;
+    let messages = consumer.messages().await?;
     let stream = messages.then(move |msg_res| {
       let format = format;
       async move {
@@ -56,6 +54,7 @@ where
           Format::JSON => serde_json::from_slice::<T>(&msg.message.payload)
             .map_err(Error::Json),
         }?;
+        msg.ack().await?;
         Ok(data)
       }
     });

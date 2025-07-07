@@ -4,6 +4,12 @@ use thiserror::Error;
 pub enum Error {
   #[error("NATS error: {0}")]
   Nats(#[from] async_nats::Error),
+  #[error("JetStream Stream Creation Error: {0}")]
+  JetStreamStreamCreation(
+    #[from] async_nats::jetstream::context::CreateStreamError,
+  ),
+  #[error("JetStream Consumer Error: {0}")]
+  JetStreamConsumer(#[from] async_nats::jetstream::stream::ConsumerError),
   #[error("JetStream publish error: {0}")]
   Publish(#[from] async_nats::jetstream::context::PublishError),
   #[error("JetStream stream error: {0}")]
@@ -14,6 +20,4 @@ pub enum Error {
   MessagePackEncode(#[from] rmp_serde::encode::Error),
   #[error("MessagePack decode error: {0}")]
   MessagePackDecode(#[from] rmp_serde::decode::Error),
-  #[error("Other error: {0}")]
-  Other(String),
 }

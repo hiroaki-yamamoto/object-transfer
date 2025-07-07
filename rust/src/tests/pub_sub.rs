@@ -1,6 +1,6 @@
+use crate::nats::{Pub, Sub};
+use crate::{Format, PubTrait};
 use futures::StreamExt;
-use object_transfer::nats::{Pub, Sub};
-use object_transfer::{Format, PubTrait};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -16,7 +16,15 @@ async fn setup(format: Format) -> Option<(Pub, Sub<MyObj>)> {
   let js = async_nats::jetstream::new(client);
   let publisher =
     Pub::new(js.clone(), "object_transfer", format).await.ok()?;
-  let subscriber = Sub::new(js, format).await.ok()?;
+  let subscriber = Sub::new(
+    js,
+    "object_transfer",
+    vec!["object_transfer"],
+    format,
+    Some("object_transfer"),
+  )
+  .await
+  .ok()?;
   Some((publisher, subscriber))
 }
 
@@ -29,7 +37,7 @@ async fn roundtrip(format: Format) {
     let recv = subscriber.next().await.unwrap().unwrap();
     assert_eq!(obj, recv);
   } else {
-    eprintln!("NATS server not available; skipping test");
+    panic!("NATS server not available!");
   }
 }
 

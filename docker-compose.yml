@@ -1,7 +1,6 @@
-version: '3'
 services:
   nats:
-    image: nats:latest
+    image: nats:scratch
     ports:
       - '4222:4222'
     command: ['-js']
