@@ -9,10 +9,14 @@ struct MyObj {
 }
 
 async fn setup(format: Format) -> Option<(Pub, Sub<MyObj>)> {
-  let client = match async_nats::connect("127.0.0.1:4222").await {
-    Ok(c) => c,
-    Err(_) => return None,
-  };
+  let client = async_nats::connect_with_options(
+    "127.0.0.1:4222",
+    async_nats::ConnectOptions::default()
+      .retry_on_initial_connect()
+      .max_reconnects(5),
+  )
+  .await
+  .unwrap();
   let js = async_nats::jetstream::new(client);
   let publisher =
     Pub::new(js.clone(), "object_transfer", format).await.ok()?;
