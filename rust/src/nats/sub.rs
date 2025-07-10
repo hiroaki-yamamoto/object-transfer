@@ -46,6 +46,7 @@ where
       let format = format;
       async move {
         let msg = msg_res?;
+        msg.ack().await?;
         let data = match format {
           Format::MessagePack => {
             rmp_serde::from_slice::<T>(&msg.message.payload)
@@ -54,7 +55,6 @@ where
           Format::JSON => serde_json::from_slice::<T>(&msg.message.payload)
             .map_err(Error::Json),
         }?;
-        msg.ack().await?;
         Ok(data)
       }
     });
