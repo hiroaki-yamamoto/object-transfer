@@ -33,8 +33,11 @@ async fn roundtrip(format: Format) {
     let obj = MyObj {
       field: "value".into(),
     };
+    let sub = ::tokio::spawn(async move {
+      return subscriber.next().await;
+    });
     publisher.publish(&obj).await.unwrap();
-    let recv = subscriber.next().await.unwrap().unwrap();
+    let recv = sub.await.unwrap().unwrap().unwrap();
     assert_eq!(obj, recv);
   } else {
     panic!("NATS server not available!");
