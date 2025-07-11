@@ -1,8 +1,11 @@
-name: CI
+name: Test Rust Code
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
+    paths:
+      - 'rust/**'
+      - '.github/workflows/test_rust.yml'
   pull_request:
 
 jobs:
@@ -12,6 +15,14 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v3
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            rust/target
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-${{ hashFiles('rust/Cargo.lock') }}
 
       - name: Set up Rust
         uses: actions-rs/toolchain@v1
