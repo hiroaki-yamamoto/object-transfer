@@ -18,17 +18,11 @@ async fn setup(format: Format) -> Option<(Pub, Sub<MyObj>)> {
   .await
   .unwrap();
   let js = async_nats::jetstream::new(client);
-  let publisher =
-    Pub::new(js.clone(), "object_transfer", format).await.ok()?;
-  let subscriber = Sub::new(
-    js,
-    "object_transfer",
-    vec!["object_transfer"],
-    format,
-    Some("object_transfer"),
-  )
-  .await
-  .ok()?;
+  let name = &format!("object_transfer_{}", format.to_string());
+  let publisher = Pub::new(js.clone(), name, format).await.ok()?;
+  let subscriber = Sub::new(js, name, vec![name], format, Some(name))
+    .await
+    .ok()?;
   Some((publisher, subscriber))
 }
 
