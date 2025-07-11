@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v3
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          profile: minimal
+          override: true
+
+      - name: Start NATS
+        run: docker compose up -d
+
+      - name: Run tests
+        run: cargo test --all-features -- --nocapture
+        working-directory: rust
+
+      - name: Stop NATS
+        if: always()
+        run: docker compose down
