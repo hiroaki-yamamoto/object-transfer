@@ -8,4 +8,4 @@ mod tests;
 
 pub use r#enum::Format;
 pub use error::Error;
-pub use traits::{PubTrait, SubTrait};
+pub use traits::{PubTrait, SubTrait, UnSubTrait};

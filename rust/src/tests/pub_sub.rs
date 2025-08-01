@@ -1,7 +1,7 @@
 use ::std::sync::Arc;
 
 use crate::nats::{AckSubOptions, Pub, Sub};
-use crate::{Format, PubTrait};
+use crate::{Format, PubTrait, SubTrait, UnSubTrait};
 use async_nats::jetstream::{
   consumer::pull::Config as PullConfig, stream::Config as StreamConfig,
 };
@@ -26,7 +26,7 @@ async fn setup(format: Format) -> Option<(Pub, Sub<MyObj>)> {
   let name: Arc<str> =
     Arc::from(format!("object_transfer_{}", format.to_string()).as_str());
   let publisher = Pub::new(js.clone(), name.to_string(), format).await.ok()?;
-  let subscriber = Sub::new(
+  let reader = Sub::new(
     js,
     AckSubOptions::new(format, name.clone())
       .stream_config(StreamConfig {
@@ -41,19 +41,22 @@ async fn setup(format: Format) -> Option<(Pub, Sub<MyObj>)> {
   )
   .await
   .ok()?;
-  Some((publisher, subscriber))
+  Some((publisher, reader))
 }
 
 async fn roundtrip(format: Format) {
-  if let Some((publisher, mut subscriber)) = setup(format).await {
+  if let Some((publisher, reader)) = setup(format).await {
     let obj = MyObj {
       field: "value".into(),
     };
     let sub = ::tokio::spawn(async move {
-      return subscriber.next().await;
+      let mut subscriber = reader.subscribe().await.unwrap();
+      let obj = subscriber.next().await.unwrap().unwrap();
+      reader.unsubscribe().await.unwrap();
+      obj
     });
     publisher.publish(&obj).await.unwrap();
-    let recv = sub.await.unwrap().unwrap().unwrap();
+    let recv = sub.await.unwrap();
     assert_eq!(obj, recv);
   } else {
     panic!("NATS server not available!");

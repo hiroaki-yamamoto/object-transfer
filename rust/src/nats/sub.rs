@@ -1,37 +1,61 @@
-use std::pin::Pin;
-use std::task::{Context, Poll};
+use std::marker::PhantomData;
+use std::sync::Arc;
 
-use async_nats::jetstream;
-use futures::stream::BoxStream;
+use async_nats::jetstream::{self, stream::Stream as JStream};
+use async_trait::async_trait;
 use futures::{Stream, StreamExt};
 use serde::de::DeserializeOwned;
 
 use crate::r#enum::Format;
 use crate::error::Error;
+use crate::traits::{SubTrait, UnSubTrait};
 
 use super::options::AckSubOptions;
 
 pub struct Sub<T> {
-  stream: BoxStream<'static, Result<T, Error>>,
+  stream: JStream,
+  options: Arc<AckSubOptions>,
+  _marker: PhantomData<T>,
 }
 
 impl<T> Sub<T>
 where
-  T: DeserializeOwned + Send + 'static,
+  T: DeserializeOwned,
 {
   pub async fn new(
     js: jetstream::Context,
     options: AckSubOptions,
   ) -> Result<Self, Error> {
-    let name = options.stream_cfg.name.clone();
     let stream = js.get_or_create_stream(options.stream_cfg.clone()).await?;
-    let consumer = stream
-      .get_or_create_consumer(&name, options.pull_cfg.clone())
+    Ok(Self {
+      stream,
+      options: Arc::new(options),
+      _marker: PhantomData,
+    })
+  }
+}
+
+#[async_trait]
+impl<T> SubTrait<T> for Sub<T>
+where
+  T: DeserializeOwned + Send + Sync,
+{
+  async fn subscribe(
+    &self,
+  ) -> Result<impl Stream<Item = Result<T, Error>> + Send + Sync, Error> {
+    let options = self.options.clone();
+    let consumer = self
+      .stream
+      .get_or_create_consumer(
+        &self.options.stream_cfg.name,
+        self.options.pull_cfg.clone(),
+      )
       .await?;
 
     let messages = consumer.messages().await?;
     let stream = messages.then(move |msg_res| {
       let format = options.format;
+      let options = options.clone();
       async move {
         let msg = msg_res?;
         if options.auto_ack {
@@ -48,23 +72,20 @@ where
         Ok(data)
       }
     });
-    Ok(Self {
-      stream: Box::pin(stream),
-    })
+    return Ok(Box::pin(stream));
   }
 }
 
-impl<T> Stream for Sub<T>
+#[async_trait]
+impl<T> UnSubTrait for Sub<T>
 where
-  T: DeserializeOwned + Send + 'static,
+  T: DeserializeOwned + Send + Sync,
 {
-  type Item = Result<T, Error>;
-
-  fn poll_next(
-    self: Pin<&mut Self>,
-    cx: &mut Context<'_>,
-  ) -> Poll<Option<Self::Item>> {
-    let inner = self.get_mut();
-    Pin::new(&mut inner.stream).poll_next(cx)
+  async fn unsubscribe(&self) -> Result<(), Error> {
+    self
+      .stream
+      .delete_consumer(&self.options.stream_cfg.name)
+      .await?;
+    Ok(())
   }
 }

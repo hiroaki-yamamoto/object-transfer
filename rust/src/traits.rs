@@ -1,7 +1,7 @@
 use crate::error::Error;
 use async_trait::async_trait;
 use futures::Stream;
-use serde::Serialize;
+use serde::{Serialize, de::DeserializeOwned};
 
 #[async_trait]
 pub trait PubTrait {
@@ -15,6 +15,17 @@ pub trait AckTrait {
   async fn ack(&self) -> Result<(), Error>;
 }
 
-pub trait SubTrait<T>: Stream<Item = Result<T, Error>> + Send {}
+#[async_trait]
+pub trait SubTrait<T>
+where
+  T: DeserializeOwned + Send + Sync,
+{
+  async fn subscribe(
+    &self,
+  ) -> Result<impl Stream<Item = Result<T, Error>> + Send + Sync, Error>;
+}
 
-impl<T, S> SubTrait<T> for S where S: Stream<Item = Result<T, Error>> + Send {}
+#[async_trait]
+pub trait UnSubTrait {
+  async fn unsubscribe(&self) -> Result<(), Error>;
+}
