@@ -22,7 +22,10 @@ where
 {
   async fn subscribe(
     &self,
-  ) -> Result<impl Stream<Item = Result<T, Error>> + Send + Sync, Error>;
+  ) -> Result<
+    impl Stream<Item = Result<(T, impl AckTrait), Error>> + Send + Sync,
+    Error,
+  >;
 }
 
 #[async_trait]

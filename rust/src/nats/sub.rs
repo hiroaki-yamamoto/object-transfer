@@ -8,7 +8,7 @@ use serde::de::DeserializeOwned;
 
 use crate::r#enum::Format;
 use crate::error::Error;
-use crate::traits::{SubTrait, UnSubTrait};
+use crate::traits::{AckTrait, SubTrait, UnSubTrait};
 
 use super::options::AckSubOptions;
 
@@ -42,7 +42,10 @@ where
 {
   async fn subscribe(
     &self,
-  ) -> Result<impl Stream<Item = Result<T, Error>> + Send + Sync, Error> {
+  ) -> Result<
+    impl Stream<Item = Result<(T, impl AckTrait), Error>> + Send + Sync,
+    Error,
+  > {
     let options = self.options.clone();
     let consumer = self
       .stream
@@ -58,18 +61,18 @@ where
       let options = options.clone();
       async move {
         let msg = msg_res?;
+        let (msg, acker) = msg.split();
         if options.auto_ack {
-          msg.ack().await?;
+          acker.ack().await?;
         }
         let data = match format {
-          Format::MessagePack => {
-            rmp_serde::from_slice::<T>(&msg.message.payload)
-              .map_err(Error::MessagePackDecode)
+          Format::MessagePack => rmp_serde::from_slice::<T>(&msg.payload)
+            .map_err(Error::MessagePackDecode),
+          Format::JSON => {
+            serde_json::from_slice::<T>(&msg.payload).map_err(Error::Json)
           }
-          Format::JSON => serde_json::from_slice::<T>(&msg.message.payload)
-            .map_err(Error::Json),
         }?;
-        Ok(data)
+        Ok((data, acker))
       }
     });
     return Ok(Box::pin(stream));

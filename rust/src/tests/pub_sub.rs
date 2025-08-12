@@ -51,7 +51,7 @@ async fn roundtrip(format: Format) {
     };
     let sub = ::tokio::spawn(async move {
       let mut subscriber = reader.subscribe().await.unwrap();
-      let obj = subscriber.next().await.unwrap().unwrap();
+      let (obj, _) = subscriber.next().await.unwrap().unwrap();
       reader.unsubscribe().await.unwrap();
       obj
     });
