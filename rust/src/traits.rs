@@ -45,5 +45,5 @@ pub trait RawSub<Msg, E> {
   async fn subscribe(
     &self,
     topic: &str,
-  ) -> Result<impl Stream<Item = Result<Msg, E>>, Error>;
+  ) -> Result<impl Stream<Item = Result<Msg, E>> + Send + Sync, Error>;
 }
