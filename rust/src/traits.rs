@@ -1,6 +1,8 @@
+use ::bytes::Bytes;
+use ::futures::Stream;
+
 use crate::error::Error;
 use async_trait::async_trait;
-use futures::Stream;
 use serde::{Serialize, de::DeserializeOwned};
 
 #[async_trait]
@@ -31,4 +33,17 @@ where
 #[async_trait]
 pub trait UnSubTrait {
   async fn unsubscribe(&self) -> Result<(), Error>;
+}
+
+#[async_trait]
+pub trait RawPub {
+  async fn publish(&self, topic: &str, payload: Bytes) -> Result<(), Error>;
+}
+
+#[async_trait]
+pub trait RawSub<Msg, E> {
+  async fn subscribe(
+    &self,
+    topic: &str,
+  ) -> Result<impl Stream<Item = Result<Msg, E>>, Error>;
 }
