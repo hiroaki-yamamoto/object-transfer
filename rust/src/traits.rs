@@ -36,12 +36,12 @@ pub trait UnSubTrait {
 }
 
 #[async_trait]
-pub trait PubContext {
+pub trait PubCtxTrait {
   async fn publish(&self, topic: &str, payload: Bytes) -> Result<(), Error>;
 }
 
 #[async_trait]
-pub trait SubContext {
+pub trait SubCtxTrait {
   async fn subscribe(
     &self,
     topic: &str,
