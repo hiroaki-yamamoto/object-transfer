@@ -36,14 +36,14 @@ pub trait UnSubTrait {
 }
 
 #[async_trait]
-pub trait RawPub {
+pub trait PubContext {
   async fn publish(&self, topic: &str, payload: Bytes) -> Result<(), Error>;
 }
 
 #[async_trait]
-pub trait RawSub<Msg, E> {
+pub trait SubContext {
   async fn subscribe(
     &self,
     topic: &str,
-  ) -> Result<impl Stream<Item = Result<Msg, E>> + Send + Sync, Error>;
+  ) -> Result<impl Stream<Item = Result<Bytes, Error>> + Send + Sync, Error>;
 }
