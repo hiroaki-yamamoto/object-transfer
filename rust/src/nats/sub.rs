@@ -12,6 +12,7 @@ use crate::traits::{AckTrait, SubTrait, UnSubTrait};
 
 use super::options::AckSubOptions;
 
+#[derive(Debug)]
 pub struct Sub<T> {
   stream: JStream,
   options: Arc<AckSubOptions>,

@@ -3,6 +3,7 @@ use async_nats::jetstream;
 use async_trait::async_trait;
 use serde::Serialize;
 
+#[derive(Debug)]
 pub struct Pub {
   js: jetstream::Context,
   subject: String,
