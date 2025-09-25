@@ -1,12 +1,13 @@
 use ::std::sync::Arc;
 
-use crate::nats::{AckSubOptions, Pub, Sub};
-use crate::{Format, PubTrait, SubTrait, UnSubTrait};
+use futures::StreamExt;
+use serde::{Deserialize, Serialize};
+
+use crate::nats::{AckSubOptions, Sub};
+use crate::{Format, Pub, PubTrait, SubTrait, UnSubTrait};
 use async_nats::jetstream::{
   consumer::pull::Config as PullConfig, stream::Config as StreamConfig,
 };
-use futures::StreamExt;
-use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 struct MyObj {
