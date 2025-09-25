@@ -25,7 +25,9 @@ async fn setup(format: Format) -> Option<(Pub, Sub<MyObj>)> {
   let js = async_nats::jetstream::new(client);
   let name: Arc<str> =
     Arc::from(format!("object_transfer_{}", format.to_string()).as_str());
-  let publisher = Pub::new(js.clone(), name.to_string(), format).await.ok()?;
+  let publisher = Pub::new(Arc::new(js.clone()), name.to_string(), format)
+    .await
+    .ok()?;
   let reader = Sub::new(
     js,
     AckSubOptions::new(format, name.clone())

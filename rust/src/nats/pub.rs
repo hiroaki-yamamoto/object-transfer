@@ -1,23 +1,26 @@
-use crate::{r#enum::Format, error::Error, traits::PubTrait};
-use async_nats::jetstream;
+use ::std::sync::Arc;
+
 use async_trait::async_trait;
 use serde::Serialize;
 
-#[derive(Debug)]
+use crate::r#enum::Format;
+use crate::error::Error;
+use crate::traits::{PubCtxTrait, PubTrait};
+
 pub struct Pub {
-  js: jetstream::Context,
+  ctx: Arc<dyn PubCtxTrait + Send + Sync>,
   subject: String,
   format: Format,
 }
 
 impl Pub {
   pub async fn new(
-    js: jetstream::Context,
+    ctx: Arc<dyn PubCtxTrait + Send + Sync>,
     subject: impl Into<String>,
     format: Format,
   ) -> Result<Self, Error> {
     Ok(Self {
-      js,
+      ctx,
       subject: subject.into(),
       format,
     })
@@ -37,9 +40,8 @@ impl PubTrait for Pub {
       Format::JSON => serde_json::to_vec(obj).map_err(Error::Json)?,
     };
     self
-      .js
-      .publish(self.subject.clone(), payload.into())
-      .await?
+      .ctx
+      .publish(self.subject.as_str(), payload.into())
       .await?;
     Ok(())
   }
