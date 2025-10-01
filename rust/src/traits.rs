@@ -44,5 +44,8 @@ pub trait PubCtxTrait {
 pub trait SubCtxTrait {
   async fn subscribe(
     &self,
-  ) -> Result<impl Stream<Item = Result<Bytes, Error>> + Send + Sync, Error>;
+  ) -> Result<
+    impl Stream<Item = Result<(Bytes, impl AckTrait), Error>> + Send + Sync,
+    Error,
+  >;
 }

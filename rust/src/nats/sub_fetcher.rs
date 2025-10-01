@@ -7,7 +7,7 @@ use ::futures::{Stream, TryFutureExt, TryStreamExt};
 
 use super::options::AckSubOptions;
 use crate::error::Error;
-use crate::traits::SubCtxTrait;
+use crate::traits::{AckTrait, SubCtxTrait};
 
 #[derive(Debug)]
 pub(super) struct SubFetcher {
@@ -33,8 +33,10 @@ impl SubFetcher {
 impl SubCtxTrait for SubFetcher {
   async fn subscribe(
     &self,
-  ) -> Result<impl Stream<Item = Result<Bytes, Error>> + Send + Sync, Error>
-  {
+  ) -> Result<
+    impl Stream<Item = Result<(Bytes, impl AckTrait), Error>> + Send + Sync,
+    Error,
+  > {
     let stream = self.get_stream().await?;
     let consumer = stream
       .get_or_create_consumer(
@@ -45,9 +47,13 @@ impl SubCtxTrait for SubFetcher {
     let messages = consumer
       .messages()
       .map_ok(|stream| {
-        return stream
-          .map_ok(|msg| msg.payload.clone())
-          .map_err(Error::from);
+        return stream.map_err(Error::from).and_then(async |msg| {
+          let (msg, acker) = msg.split();
+          if self.options.auto_ack {
+            acker.ack().await?;
+          }
+          return Ok((msg.payload.clone(), acker));
+        });
       })
       .await?;
     Ok(messages)
