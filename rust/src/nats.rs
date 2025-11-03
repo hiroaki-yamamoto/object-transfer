@@ -6,3 +6,4 @@ mod sub_fetcher;
 
 pub use options::AckSubOptions;
 pub use sub::Sub;
+pub use sub_fetcher::SubFetcher;

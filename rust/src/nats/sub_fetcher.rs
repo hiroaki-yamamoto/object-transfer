@@ -10,7 +10,7 @@ use crate::error::Error;
 use crate::traits::{AckTrait, SubCtxTrait};
 
 #[derive(Debug)]
-pub(super) struct SubFetcher {
+pub struct SubFetcher {
   ctx: Context,
   options: Arc<AckSubOptions>,
 }
