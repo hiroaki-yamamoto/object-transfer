@@ -3,7 +3,8 @@ use std::sync::Arc;
 
 use async_nats::jetstream::{self, stream::Stream as JStream};
 use async_trait::async_trait;
-use futures::{Stream, StreamExt};
+use futures::StreamExt;
+use futures::stream::BoxStream;
 use serde::de::DeserializeOwned;
 
 use crate::r#enum::Format;
@@ -43,10 +44,8 @@ where
 {
   async fn subscribe(
     &self,
-  ) -> Result<
-    impl Stream<Item = Result<(T, impl AckTrait), Error>> + Send + Sync,
-    Error,
-  > {
+  ) -> Result<BoxStream<Result<(T, Box<dyn AckTrait + Send>), Error>>, Error>
+  {
     let options = self.options.clone();
     let consumer = self
       .stream
@@ -73,7 +72,7 @@ where
             serde_json::from_slice::<T>(&msg.payload).map_err(Error::Json)
           }
         }?;
-        Ok((data, acker))
+        Ok((data, Box::new(acker) as Box<dyn AckTrait + Send>))
       }
     });
     return Ok(Box::pin(stream));

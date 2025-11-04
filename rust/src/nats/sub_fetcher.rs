@@ -3,7 +3,7 @@ use ::std::sync::Arc;
 use ::async_nats::jetstream::{context::Context, stream::Stream as JStream};
 use ::async_trait::async_trait;
 use ::bytes::Bytes;
-use ::futures::Stream;
+use ::futures::stream::BoxStream;
 
 use super::options::AckSubOptions;
 use crate::error::Error;
@@ -34,7 +34,7 @@ impl SubCtxTrait for SubFetcher {
   async fn subscribe(
     self,
   ) -> Result<
-    impl Stream<Item = Result<(Bytes, impl AckTrait), Error>> + Send + Sync,
+    BoxStream<'async_trait, Result<(Bytes, Box<dyn AckTrait + Send>), Error>>,
     Error,
   > {
     let stream = self.get_stream().await?;

@@ -1,7 +1,7 @@
 use ::bytes::Bytes;
-use ::futures::Stream;
 
 use crate::error::Error;
+use ::futures::stream::BoxStream;
 use async_trait::async_trait;
 use serde::{Serialize, de::DeserializeOwned};
 
@@ -24,10 +24,7 @@ where
 {
   async fn subscribe(
     &self,
-  ) -> Result<
-    impl Stream<Item = Result<(T, impl AckTrait), Error>> + Send + Sync,
-    Error,
-  >;
+  ) -> Result<BoxStream<Result<(T, Box<dyn AckTrait + Send>), Error>>, Error>;
 }
 
 #[async_trait]
@@ -45,7 +42,7 @@ pub trait SubCtxTrait {
   async fn subscribe(
     self,
   ) -> Result<
-    impl Stream<Item = Result<(Bytes, impl AckTrait), Error>> + Send + Sync,
+    BoxStream<'async_trait, Result<(Bytes, Box<dyn AckTrait + Send>), Error>>,
     Error,
   >;
 }
