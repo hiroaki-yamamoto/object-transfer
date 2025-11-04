@@ -8,13 +8,13 @@ use serde::de::DeserializeOwned;
 
 use crate::r#enum::Format;
 use crate::error::Error;
-use crate::traits::{AckTrait, SubTrait, UnSubTrait};
+use crate::traits::{AckTrait, SubCtxTrait, SubTrait, UnSubTrait};
 
 use super::options::AckSubOptions;
 
-#[derive(Debug)]
 pub struct Sub<T> {
   stream: JStream,
+  // ctx: Arc<dyn SubCtxTrait + Send + Sync>,
   options: Arc<AckSubOptions>,
   _marker: PhantomData<T>,
 }
