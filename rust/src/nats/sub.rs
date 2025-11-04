@@ -44,8 +44,10 @@ where
 {
   async fn subscribe(
     &self,
-  ) -> Result<BoxStream<Result<(T, Box<dyn AckTrait + Send>), Error>>, Error>
-  {
+  ) -> Result<
+    BoxStream<'async_trait, Result<(T, Box<dyn AckTrait + Send>), Error>>,
+    Error,
+  > {
     let options = self.options.clone();
     let consumer = self
       .stream

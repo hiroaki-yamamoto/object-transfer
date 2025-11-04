@@ -28,11 +28,11 @@ impl Pub {
 }
 
 #[async_trait]
-impl PubTrait for Pub {
-  async fn publish<T>(&self, obj: &T) -> Result<(), Error>
-  where
-    T: Serialize + Send + Sync,
-  {
+impl<T> PubTrait<T> for Pub
+where
+  T: Serialize + Send + Sync,
+{
+  async fn publish(&self, obj: &T) -> Result<(), Error> {
     let payload = match self.format {
       Format::MessagePack => {
         rmp_serde::to_vec(obj).map_err(Error::MessagePackEncode)?
