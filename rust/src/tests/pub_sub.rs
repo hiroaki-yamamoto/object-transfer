@@ -14,7 +14,7 @@ struct MyObj {
   field: String,
 }
 
-async fn setup(format: Format) -> Option<(Pub, Sub<MyObj>)> {
+async fn setup(format: Format) -> Option<(Pub<MyObj>, Sub<MyObj>)> {
   let client = async_nats::connect_with_options(
     "127.0.0.1:4222",
     async_nats::ConnectOptions::default()
