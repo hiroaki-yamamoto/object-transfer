@@ -22,7 +22,7 @@ pub struct Sub<T> {
 
 impl<T> Sub<T>
 where
-  T: DeserializeOwned,
+  T: DeserializeOwned + Send + Sync,
 {
   pub async fn new(
     js: jetstream::Context,
@@ -38,14 +38,18 @@ where
 }
 
 #[async_trait]
-impl<T> SubTrait<T> for Sub<T>
+impl<T> SubTrait for Sub<T>
 where
   T: DeserializeOwned + Send + Sync,
 {
+  type Item = T;
   async fn subscribe(
     &self,
   ) -> Result<
-    BoxStream<'async_trait, Result<(T, Box<dyn AckTrait + Send>), Error>>,
+    BoxStream<
+      'async_trait,
+      Result<(Self::Item, Box<dyn AckTrait + Send>), Error>,
+    >,
     Error,
   > {
     let options = self.options.clone();

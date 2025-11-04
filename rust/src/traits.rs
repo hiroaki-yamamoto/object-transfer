@@ -6,11 +6,9 @@ use async_trait::async_trait;
 use serde::{Serialize, de::DeserializeOwned};
 
 #[async_trait]
-pub trait PubTrait<T>
-where
-  T: Serialize + Send + Sync,
-{
-  async fn publish(&self, obj: &T) -> Result<(), Error>;
+pub trait PubTrait {
+  type Item: Serialize + Send + Sync;
+  async fn publish(&self, obj: &Self::Item) -> Result<(), Error>;
 }
 
 #[async_trait]
@@ -19,14 +17,15 @@ pub trait AckTrait {
 }
 
 #[async_trait]
-pub trait SubTrait<T>
-where
-  T: DeserializeOwned + Send + Sync,
-{
+pub trait SubTrait {
+  type Item: DeserializeOwned + Send + Sync;
   async fn subscribe(
     &self,
   ) -> Result<
-    BoxStream<'async_trait, Result<(T, Box<dyn AckTrait + Send>), Error>>,
+    BoxStream<
+      'async_trait,
+      Result<(Self::Item, Box<dyn AckTrait + Send>), Error>,
+    >,
     Error,
   >;
 }
