@@ -12,21 +12,17 @@ use crate::traits::{AckTrait, SubCtxTrait, UnSubTrait};
 
 #[derive(Debug)]
 pub struct SubFetcher {
-  ctx: Arc<Context>,
+  stream: JStream,
   options: Arc<AckSubOptions>,
 }
 
 impl SubFetcher {
-  pub fn new(ctx: Arc<Context>, options: Arc<AckSubOptions>) -> Self {
-    return Self { ctx, options };
-  }
-  async fn get_stream(&self) -> Result<JStream, Error> {
-    return Ok(
-      self
-        .ctx
-        .get_or_create_stream(self.options.stream_cfg.clone())
-        .await?,
-    );
+  pub async fn new(
+    ctx: Arc<Context>,
+    options: Arc<AckSubOptions>,
+  ) -> Result<Self, Error> {
+    let stream = ctx.get_or_create_stream(options.stream_cfg.clone()).await?;
+    Ok(Self { stream, options })
   }
 }
 
@@ -38,8 +34,8 @@ impl SubCtxTrait for SubFetcher {
     BoxStream<'async_trait, Result<(Bytes, Box<dyn AckTrait + Send>), Error>>,
     Error,
   > {
-    let stream = self.get_stream().await?;
-    let consumer = stream
+    let consumer = self
+      .stream
       .get_or_create_consumer(
         &self.options.stream_cfg.name,
         self.options.pull_cfg.clone(),
@@ -58,8 +54,8 @@ impl SubCtxTrait for SubFetcher {
 #[async_trait]
 impl UnSubTrait for SubFetcher {
   async fn unsubscribe(&self) -> Result<(), Error> {
-    let stream = self.get_stream().await?;
-    stream
+    self
+      .stream
       .delete_consumer(&self.options.pull_cfg.durable_name.clone().unwrap())
       .await?;
     Ok(())
