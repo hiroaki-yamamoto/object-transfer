@@ -43,7 +43,7 @@ pub trait PubCtxTrait {
 #[async_trait]
 pub trait SubCtxTrait {
   async fn subscribe(
-    self,
+    &self,
   ) -> Result<
     BoxStream<'async_trait, Result<(Bytes, Box<dyn AckTrait + Send>), Error>>,
     Error,

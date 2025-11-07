@@ -1,6 +1,6 @@
 use ::async_nats::jetstream::Context;
 use ::async_nats::jetstream::consumer::{
-  pull::Stream as PullMsgs, push::Messages as PushMsgs,
+  PullConsumer as PullCons, PushConsumer as PushCons,
 };
 use ::async_trait::async_trait;
 use ::bytes::Bytes;
@@ -24,7 +24,7 @@ macro_rules! impl_sub_ctx_trait {
     #[async_trait]
     impl SubCtxTrait for $cls_name {
       async fn subscribe(
-        self,
+        &self,
       ) -> Result<
         BoxStream<
           'async_trait,
@@ -32,20 +32,25 @@ macro_rules! impl_sub_ctx_trait {
         >,
         Error,
       > {
-        let messages = self.map_err(Error::from).and_then(async |msg| {
-          let (msg, acker) = msg.split();
-          return Ok((
-            msg.payload.clone(),
-            Box::new(acker) as Box<dyn AckTrait + Send>,
-          ));
-        });
+        let messages =
+          self
+            .messages()
+            .await?
+            .map_err(Error::from)
+            .and_then(async |msg| {
+              let (msg, acker) = msg.split();
+              return Ok((
+                msg.payload.clone(),
+                Box::new(acker) as Box<dyn AckTrait + Send>,
+              ));
+            });
         Ok(messages.boxed())
       }
     }
   };
 }
 
-impl_sub_ctx_trait!(PullMsgs);
-impl_sub_ctx_trait!(PushMsgs);
+impl_sub_ctx_trait!(PullCons);
+impl_sub_ctx_trait!(PushCons);
 
 // TODO: Need idea to implement SubCtxTrait for Ordered Message
