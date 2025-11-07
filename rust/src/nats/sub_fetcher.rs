@@ -8,7 +8,7 @@ use ::futures::stream::BoxStream;
 
 use super::options::AckSubOptions;
 use crate::error::Error;
-use crate::traits::{AckTrait, SubCtxTrait};
+use crate::traits::{AckTrait, SubCtxTrait, UnSubTrait};
 
 #[derive(Debug)]
 pub struct SubFetcher {
@@ -52,5 +52,16 @@ impl SubCtxTrait for SubFetcher {
       }
     };
     Ok(messages.boxed())
+  }
+}
+
+#[async_trait]
+impl UnSubTrait for SubFetcher {
+  async fn unsubscribe(&self) -> Result<(), Error> {
+    let stream = self.get_stream().await?;
+    stream
+      .delete_consumer(&self.options.pull_cfg.durable_name.clone().unwrap())
+      .await?;
+    Ok(())
   }
 }

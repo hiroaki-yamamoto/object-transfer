@@ -8,14 +8,14 @@ use serde::de::DeserializeOwned;
 
 use crate::r#enum::Format;
 use crate::error::Error;
-use crate::traits::{AckTrait, SubCtxTrait, SubTrait, UnSubTrait};
-
-use super::options::AckSubOptions;
+use crate::traits::{
+  AckTrait, SubCtxTrait, SubOptTrait, SubTrait, UnSubTrait,
+};
 
 pub struct Sub<T> {
   ctx: Arc<dyn SubCtxTrait + Send + Sync>,
   unsub: Option<Arc<dyn UnSubTrait + Send + Sync>>,
-  options: Arc<AckSubOptions>,
+  options: Arc<dyn SubOptTrait + Send + Sync>,
   _marker: PhantomData<T>,
 }
 
@@ -26,12 +26,12 @@ where
   pub async fn new(
     ctx: Arc<dyn SubCtxTrait + Send + Sync>,
     unsub: Option<Arc<dyn UnSubTrait + Send + Sync>>,
-    options: AckSubOptions,
+    options: Arc<dyn SubOptTrait + Send + Sync>,
   ) -> Result<Self, Error> {
     Ok(Self {
       ctx,
       unsub,
-      options: Arc::new(options),
+      options,
       _marker: PhantomData,
     })
   }
@@ -54,10 +54,10 @@ where
   > {
     let messages = self.ctx.subscribe().await?;
     let stream = messages.and_then(async move |(msg, acker)| {
-      if self.options.auto_ack {
+      if self.options.get_auto_ack() {
         acker.ack().await?;
       }
-      let data = match self.options.format {
+      let data = match self.options.get_format() {
         Format::MessagePack => {
           rmp_serde::from_slice::<T>(&msg).map_err(Error::MessagePackDecode)
         }

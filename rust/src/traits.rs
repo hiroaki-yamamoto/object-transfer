@@ -1,9 +1,11 @@
 use ::bytes::Bytes;
 
-use crate::error::Error;
 use ::futures::stream::BoxStream;
 use async_trait::async_trait;
 use serde::{Serialize, de::DeserializeOwned};
+
+use crate::r#enum::Format;
+use crate::error::Error;
 
 #[async_trait]
 pub trait PubTrait {
@@ -48,4 +50,9 @@ pub trait SubCtxTrait {
     BoxStream<'async_trait, Result<(Bytes, Box<dyn AckTrait + Send>), Error>>,
     Error,
   >;
+}
+
+pub trait SubOptTrait {
+  fn get_auto_ack(&self) -> bool;
+  fn get_format(&self) -> Format;
 }

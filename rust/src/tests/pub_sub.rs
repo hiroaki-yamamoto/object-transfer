@@ -3,8 +3,8 @@ use ::std::sync::Arc;
 use futures::StreamExt;
 use serde::{Deserialize, Serialize};
 
-use crate::nats::{AckSubOptions, Sub};
-use crate::{Format, Pub, PubTrait, SubTrait, UnSubTrait};
+use crate::nats::{AckSubOptions, SubFetcher};
+use crate::{Format, Pub, PubTrait, Sub, SubTrait, UnSubTrait};
 use async_nats::jetstream::{
   consumer::pull::Config as PullConfig, stream::Config as StreamConfig,
 };
@@ -29,8 +29,7 @@ async fn setup(format: Format) -> Option<(Pub<MyObj>, Sub<MyObj>)> {
   let publisher = Pub::new(Arc::new(js.clone()), name.to_string(), format)
     .await
     .ok()?;
-  let reader = Sub::new(
-    js,
+  let options = Arc::new(
     AckSubOptions::new(format, name.clone())
       .stream_config(StreamConfig {
         name: name.to_string(),
@@ -41,9 +40,11 @@ async fn setup(format: Format) -> Option<(Pub<MyObj>, Sub<MyObj>)> {
         durable_name: Some(name.to_string()),
         ..Default::default()
       }),
-  )
-  .await
-  .ok()?;
+  );
+  let subfetcher = Arc::new(SubFetcher::new(js, options.clone()));
+  let reader = Sub::new(subfetcher.clone(), Some(subfetcher), options)
+    .await
+    .ok()?;
   Some((publisher, reader))
 }
 

@@ -5,6 +5,7 @@ use ::async_nats::jetstream::{
 };
 
 use crate::r#enum::Format;
+use crate::traits::SubOptTrait;
 
 /// Configuration options for creating an acknowledgment-based subscriber.
 ///
@@ -131,5 +132,14 @@ impl AckSubOptions {
   pub fn pull_config(mut self, pull_cfg: PullConfig) -> Self {
     self.pull_cfg = pull_cfg;
     self
+  }
+}
+
+impl SubOptTrait for AckSubOptions {
+  fn get_auto_ack(&self) -> bool {
+    return self.auto_ack;
+  }
+  fn get_format(&self) -> Format {
+    return self.format;
   }
 }
