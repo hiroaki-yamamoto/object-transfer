@@ -8,7 +8,7 @@ setup:
 	docker compose up -d
 
 teardown:
-	docker compose stop
+	docker compose down
 
 testRust: setup
 	make -C rust test

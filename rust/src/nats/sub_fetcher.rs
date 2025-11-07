@@ -12,12 +12,12 @@ use crate::traits::{AckTrait, SubCtxTrait, UnSubTrait};
 
 #[derive(Debug)]
 pub struct SubFetcher {
-  ctx: Context,
+  ctx: Arc<Context>,
   options: Arc<AckSubOptions>,
 }
 
 impl SubFetcher {
-  pub fn new(ctx: Context, options: Arc<AckSubOptions>) -> Self {
+  pub fn new(ctx: Arc<Context>, options: Arc<AckSubOptions>) -> Self {
     return Self { ctx, options };
   }
   async fn get_stream(&self) -> Result<JStream, Error> {
