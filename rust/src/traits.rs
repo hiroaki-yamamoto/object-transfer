@@ -24,10 +24,7 @@ pub trait SubTrait {
   async fn subscribe(
     &self,
   ) -> Result<
-    BoxStream<
-      'async_trait,
-      Result<(Self::Item, Box<dyn AckTrait + Send>), Error>,
-    >,
+    BoxStream<Result<(Self::Item, Box<dyn AckTrait + Send>), Error>>,
     Error,
   >;
 }
@@ -46,10 +43,7 @@ pub trait PubCtxTrait {
 pub trait SubCtxTrait {
   async fn subscribe(
     &self,
-  ) -> Result<
-    BoxStream<'async_trait, Result<(Bytes, Box<dyn AckTrait + Send>), Error>>,
-    Error,
-  >;
+  ) -> Result<BoxStream<Result<(Bytes, Box<dyn AckTrait + Send>), Error>>, Error>;
 }
 
 pub trait SubOptTrait {

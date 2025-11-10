@@ -46,10 +46,7 @@ where
   async fn subscribe(
     &self,
   ) -> Result<
-    BoxStream<
-      'async_trait,
-      Result<(Self::Item, Box<dyn AckTrait + Send>), Error>,
-    >,
+    BoxStream<Result<(Self::Item, Box<dyn AckTrait + Send>), Error>>,
     Error,
   > {
     let messages = self.ctx.subscribe().await?;

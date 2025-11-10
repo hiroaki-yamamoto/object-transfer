@@ -30,10 +30,8 @@ impl SubFetcher {
 impl SubCtxTrait for SubFetcher {
   async fn subscribe(
     &self,
-  ) -> Result<
-    BoxStream<'async_trait, Result<(Bytes, Box<dyn AckTrait + Send>), Error>>,
-    Error,
-  > {
+  ) -> Result<BoxStream<Result<(Bytes, Box<dyn AckTrait + Send>), Error>>, Error>
+  {
     let consumer = self
       .stream
       .get_or_create_consumer(

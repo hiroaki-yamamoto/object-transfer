@@ -26,10 +26,7 @@ macro_rules! impl_sub_ctx_trait {
       async fn subscribe(
         &self,
       ) -> Result<
-        BoxStream<
-          'async_trait,
-          Result<(Bytes, Box<dyn AckTrait + Send>), Error>,
-        >,
+        BoxStream<Result<(Bytes, Box<dyn AckTrait + Send>), Error>>,
         Error,
       > {
         let messages =
