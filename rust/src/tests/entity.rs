@@ -1,4 +1,8 @@
-#[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
+use ::serde::{Deserialize, Serialize};
+
+#[derive(
+  Debug, Clone, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize,
+)]
 pub struct TestEntity {
   pub id: u32,
   pub name: String,
