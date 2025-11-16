@@ -1,13 +1,13 @@
-use super::stream::StreamMock;
+use futures::stream::{Iter, iter};
+
+use super::entity::TestEntity;
 
 pub struct SubscribeMock {
-  stream: StreamMock,
+  stream: Iter<std::vec::IntoIter<TestEntity>>,
 }
 
 impl SubscribeMock {
   pub fn new(data: Vec<super::entity::TestEntity>) -> Self {
-    Self {
-      stream: StreamMock::new(data),
-    }
+    Self { stream: iter(data) }
   }
 }
