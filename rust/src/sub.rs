@@ -46,7 +46,7 @@ where
   async fn subscribe(
     &self,
   ) -> Result<
-    BoxStream<Result<(Self::Item, Box<dyn AckTrait + Send>), Error>>,
+    BoxStream<Result<(Self::Item, Arc<dyn AckTrait + Send + Sync>), Error>>,
     Error,
   > {
     let messages = self.ctx.subscribe().await?;
@@ -60,7 +60,7 @@ where
         }
         Format::JSON => serde_json::from_slice::<T>(&msg).map_err(Error::Json),
       }?;
-      Ok((data, acker as Box<dyn AckTrait + Send>))
+      Ok((data, acker))
     });
     return Ok(Box::pin(stream));
   }

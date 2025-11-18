@@ -1,3 +1,5 @@
+use ::std::sync::Arc;
+
 use ::async_nats::jetstream::Context;
 use ::async_nats::jetstream::consumer::{
   PullConsumer as PullCons, PushConsumer as PushCons,
@@ -26,7 +28,7 @@ macro_rules! impl_sub_ctx_trait {
       async fn subscribe(
         &self,
       ) -> Result<
-        BoxStream<Result<(Bytes, Box<dyn AckTrait + Send>), Error>>,
+        BoxStream<Result<(Bytes, Arc<dyn AckTrait + Send + Sync>), Error>>,
         Error,
       > {
         let messages =
@@ -38,7 +40,7 @@ macro_rules! impl_sub_ctx_trait {
               let (msg, acker) = msg.split();
               return Ok((
                 msg.payload.clone(),
-                Box::new(acker) as Box<dyn AckTrait + Send>,
+                Arc::new(acker) as Arc<dyn AckTrait + Send + Sync>,
               ));
             });
         Ok(messages.boxed())

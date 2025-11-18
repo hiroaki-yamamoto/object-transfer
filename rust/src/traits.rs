@@ -1,4 +1,5 @@
 use ::bytes::Bytes;
+use ::std::sync::Arc;
 
 use ::async_trait::async_trait;
 use ::futures::stream::BoxStream;
@@ -31,7 +32,7 @@ pub trait SubTrait {
   async fn subscribe(
     &self,
   ) -> Result<
-    BoxStream<Result<(Self::Item, Box<dyn AckTrait + Send>), Error>>,
+    BoxStream<Result<(Self::Item, Arc<dyn AckTrait + Send + Sync>), Error>>,
     Error,
   >;
 }
@@ -52,7 +53,10 @@ pub trait PubCtxTrait {
 pub trait SubCtxTrait {
   async fn subscribe(
     &self,
-  ) -> Result<BoxStream<Result<(Bytes, Box<dyn AckTrait + Send>), Error>>, Error>;
+  ) -> Result<
+    BoxStream<Result<(Bytes, Arc<dyn AckTrait + Send + Sync>), Error>>,
+    Error,
+  >;
 }
 
 #[cfg_attr(test, automock)]
