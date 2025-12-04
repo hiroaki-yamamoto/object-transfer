@@ -19,7 +19,7 @@ impl<T> Pub<T>
 where
   T: Serialize + Send + Sync,
 {
-  pub async fn new(
+  pub fn new(
     ctx: Arc<dyn PubCtxTrait + Send + Sync>,
     subject: impl Into<String>,
     format: Format,
@@ -51,5 +51,69 @@ where
       .publish(self.subject.as_str(), payload.into())
       .await?;
     Ok(())
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use ::bytes::Bytes;
+  use ::mockall::predicate::*;
+  use ::rmp_serde::to_vec as to_msgpack;
+  use ::serde_json::to_vec as jsonify;
+
+  use crate::tests::entity::TestEntity;
+  use crate::traits::MockPubCtxTrait;
+
+  use super::*;
+
+  #[tokio::test]
+  async fn test_publish_json() {
+    let entity = TestEntity::new(1, "Test Name");
+    let subject = "test.subject.json";
+    let correct = Bytes::from(jsonify(&entity).unwrap());
+    let mut ctx = MockPubCtxTrait::new();
+    ctx
+      .expect_publish()
+      .with(eq(subject), eq(correct))
+      .times(1)
+      .returning(|_, _| Ok(()));
+    let publisher: Pub<TestEntity> =
+      Pub::new(Arc::new(ctx), subject, Format::JSON).unwrap();
+    let res = publisher.publish(&entity).await;
+    assert!(res.is_ok());
+  }
+
+  #[tokio::test]
+  async fn test_publish_msgpack() {
+    let entity = TestEntity::new(1, "Test Name");
+    let subject = "test.subject.msgpack";
+    let correct = Bytes::from(to_msgpack(&entity).unwrap());
+    let mut ctx = MockPubCtxTrait::new();
+    ctx
+      .expect_publish()
+      .with(eq(subject), eq(correct))
+      .times(1)
+      .returning(|_, _| Ok(()));
+    let publisher: Pub<TestEntity> =
+      Pub::new(Arc::new(ctx), subject, Format::MessagePack).unwrap();
+    let res = publisher.publish(&entity).await;
+    assert!(res.is_ok());
+  }
+
+  #[tokio::test]
+  async fn test_publish_error() {
+    let entity = TestEntity::new(1, "Test Name");
+    let subject = "test.subject.error";
+    let mut ctx = MockPubCtxTrait::new();
+    ctx
+      .expect_publish()
+      .withf(move |subj, _| subj == subject)
+      .times(1)
+      .returning(|_, _| Err(Error::ErrorTest));
+    let publisher: Pub<TestEntity> =
+      Pub::new(Arc::new(ctx), subject, Format::JSON).unwrap();
+    let res = publisher.publish(&entity).await;
+    let err_msg = res.unwrap_err().to_string();
+    assert_eq!(err_msg, "Error for test");
   }
 }
