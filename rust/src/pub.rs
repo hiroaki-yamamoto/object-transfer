@@ -110,6 +110,6 @@ mod tests {
       Pub::new(Arc::new(ctx), subject, Format::JSON).unwrap();
     let res = publisher.publish(&entity).await;
     let err_msg = res.unwrap_err().to_string();
-    assert_eq!(err_msg, "Error for test");
+    assert_eq!(err_msg, Error::ErrorTest.to_string());
   }
 }

@@ -37,6 +37,6 @@ pub enum Error {
   #[error("MessagePack decode error: {0}")]
   MessagePackDecode(#[from] rmp_serde::decode::Error),
   #[cfg(test)]
-  #[error("Error for test")]
+  #[error("Error Test")]
   ErrorTest,
 }

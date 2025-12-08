@@ -82,6 +82,7 @@ where
 #[cfg(test)]
 mod test {
   use ::bytes::Bytes;
+  use ::futures::stream::StreamExt;
   use ::rmp_serde::to_vec as to_msgpack;
   use ::serde_json::to_vec as jsonify;
 
@@ -90,7 +91,7 @@ mod test {
 
   use super::*;
 
-  async fn test_subscribe(format: Format) {
+  async fn test_subscribe(format: Format, auto_ack: bool) {
     let entities = vec![
       TestEntity::new(1, "Test1"),
       TestEntity::new(2, "Test2"),
@@ -100,7 +101,11 @@ mod test {
       .iter()
       .map(|e| {
         let mut ack_mock = MockAckTrait::new();
-        ack_mock.expect_ack().returning(|| Ok(())).once();
+        if auto_ack {
+          ack_mock.expect_ack().returning(|| Ok(())).once();
+        } else {
+          ack_mock.expect_ack().never();
+        }
         return (
           Bytes::from(match format {
             Format::MessagePack => to_msgpack(e).unwrap(),
@@ -115,7 +120,7 @@ mod test {
     let mut options = MockSubOptTrait::new();
     options
       .expect_get_auto_ack()
-      .return_const(true)
+      .return_const(auto_ack)
       .times(entities.len());
     options
       .expect_get_format()
@@ -141,11 +146,63 @@ mod test {
 
   #[tokio::test]
   async fn test_subscribe_json() {
-    test_subscribe(Format::JSON).await;
+    test_subscribe(Format::JSON, true).await;
   }
 
   #[tokio::test]
   async fn test_subscribe_messagepack() {
-    test_subscribe(Format::MessagePack).await;
+    test_subscribe(Format::MessagePack, true).await;
+  }
+
+  #[tokio::test]
+  async fn test_subscribe_json_no_auto_ack() {
+    test_subscribe(Format::JSON, false).await;
+  }
+
+  #[tokio::test]
+  async fn test_subscribe_messagepack_no_auto_ack() {
+    test_subscribe(Format::MessagePack, false).await;
+  }
+
+  async fn test_ack_err(format: Format) {
+    let mut data: Vec<(Bytes, Arc<dyn AckTrait + Send + Sync>)> = Vec::new();
+    data.push((Bytes::new(), {
+      let mut ack_mock = MockAckTrait::new();
+      ack_mock
+        .expect_ack()
+        .returning(|| Err(Error::ErrorTest))
+        .once();
+      Arc::new(ack_mock)
+    }));
+    let ctx: Arc<dyn SubCtxTrait + Send + Sync> =
+      Arc::new(SubscribeMock::new(data));
+    let mut options = MockSubOptTrait::new();
+    options.expect_get_auto_ack().return_const(true).once();
+    options.expect_get_format().return_const(format).never();
+    let subscribe: Sub<TestEntity> = Sub::new(
+      ctx,
+      None,
+      Arc::new(options) as Arc<dyn SubOptTrait + Send + Sync>,
+    )
+    .await
+    .unwrap();
+    let stream = subscribe.subscribe().await.unwrap();
+    let obtained: Vec<String> = stream
+      .collect::<Vec<_>>()
+      .await
+      .iter()
+      .filter_map(|res| res.as_ref().map_err(|err| err.to_string()).err())
+      .collect();
+    assert_eq!(obtained, vec![Error::ErrorTest.to_string()]);
+  }
+
+  #[tokio::test]
+  async fn test_ack_json_err() {
+    test_ack_err(Format::JSON).await;
+  }
+
+  #[tokio::test]
+  async fn test_ack_messagepack_err() {
+    test_ack_err(Format::MessagePack).await;
   }
 }
