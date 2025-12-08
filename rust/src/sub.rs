@@ -78,3 +78,74 @@ where
     return Ok(());
   }
 }
+
+#[cfg(test)]
+mod test {
+  use ::bytes::Bytes;
+  use ::rmp_serde::to_vec as to_msgpack;
+  use ::serde_json::to_vec as jsonify;
+
+  use crate::tests::{entity::TestEntity, subscribe::SubscribeMock};
+  use crate::traits::{MockAckTrait, MockSubOptTrait};
+
+  use super::*;
+
+  async fn test_subscribe(format: Format) {
+    let entities = vec![
+      TestEntity::new(1, "Test1"),
+      TestEntity::new(2, "Test2"),
+      TestEntity::new(3, "Test3"),
+    ];
+    let data: Vec<(Bytes, Arc<dyn AckTrait + Send + Sync>)> = entities
+      .iter()
+      .map(|e| {
+        let mut ack_mock = MockAckTrait::new();
+        ack_mock.expect_ack().returning(|| Ok(())).once();
+        return (
+          Bytes::from(match format {
+            Format::MessagePack => to_msgpack(e).unwrap(),
+            Format::JSON => jsonify(e).unwrap(),
+          }),
+          Arc::new(ack_mock) as Arc<dyn AckTrait + Send + Sync>,
+        );
+      })
+      .collect();
+    let ctx: Arc<dyn SubCtxTrait + Send + Sync> =
+      Arc::new(SubscribeMock::new(data));
+    let mut options = MockSubOptTrait::new();
+    options
+      .expect_get_auto_ack()
+      .return_const(true)
+      .times(entities.len());
+    options
+      .expect_get_format()
+      .return_const(format)
+      .times(entities.len());
+    let subscribe: Sub<TestEntity> = Sub::new(
+      ctx,
+      None,
+      Arc::new(options) as Arc<dyn SubOptTrait + Send + Sync>,
+    )
+    .await
+    .unwrap();
+    let stream = subscribe.subscribe().await.unwrap();
+    let obtained: Vec<TestEntity> = stream
+      .try_collect::<Vec<_>>()
+      .await
+      .unwrap()
+      .into_iter()
+      .map(|(entity, _ack)| entity)
+      .collect();
+    assert_eq!(obtained, entities);
+  }
+
+  #[tokio::test]
+  async fn test_subscribe_json() {
+    test_subscribe(Format::JSON).await;
+  }
+
+  #[tokio::test]
+  async fn test_subscribe_messagepack() {
+    test_subscribe(Format::MessagePack).await;
+  }
+}
