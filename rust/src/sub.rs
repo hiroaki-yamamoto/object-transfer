@@ -12,7 +12,8 @@ use crate::traits::{
   AckTrait, SubCtxTrait, SubOptTrait, SubTrait, UnSubTrait,
 };
 
-/// Subscriber wrapper that deserializes messages and optionally auto-acks.
+/// Subscriber wrapper that deserializes messages and optionally acknowledges
+/// them.
 ///
 /// The subscriber relies on a [`SubCtxTrait`] implementation for message
 /// retrieval and a [`SubOptTrait`] provider for decoding and acknowledgment
