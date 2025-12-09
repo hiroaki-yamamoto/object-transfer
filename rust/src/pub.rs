@@ -8,6 +8,11 @@ use crate::r#enum::Format;
 use crate::error::Error;
 use crate::traits::{PubCtxTrait, PubTrait};
 
+/// Publisher for serializable messages using a pluggable context.
+///
+/// The publisher encodes messages according to the configured [`Format`] and
+/// delegates the actual publish call to an injected [`PubCtxTrait`] so it can
+/// work with different backends.
 pub struct Pub<T> {
   ctx: Arc<dyn PubCtxTrait + Send + Sync>,
   subject: String,
@@ -19,6 +24,12 @@ impl<T> Pub<T>
 where
   T: Serialize + Send + Sync,
 {
+  /// Creates a new publisher for the given subject and serialization format.
+  ///
+  /// # Parameters
+  /// - `ctx`: Backend publish context that delivers serialized bytes.
+  /// - `subject`: Destination subject or topic to send messages to.
+  /// - `format`: Serialization format used when encoding published items.
   pub fn new(
     ctx: Arc<dyn PubCtxTrait + Send + Sync>,
     subject: impl Into<String>,
@@ -39,6 +50,11 @@ where
   T: Serialize + Send + Sync,
 {
   type Item = T;
+  /// Serializes the provided object and publishes it to the configured
+  /// subject using the underlying context.
+  ///
+  /// # Parameters
+  /// - `obj`: The typed value to encode and send to the subject.
   async fn publish(&self, obj: &T) -> Result<(), Error> {
     let payload = match self.format {
       Format::MessagePack => {

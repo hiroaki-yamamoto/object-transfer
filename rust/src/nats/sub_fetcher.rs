@@ -10,6 +10,7 @@ use super::options::AckSubOptions;
 use crate::error::Error;
 use crate::traits::{AckTrait, SubCtxTrait, UnSubTrait};
 
+/// Fetches pull-based JetStream messages using the configured stream options.
 #[derive(Debug)]
 pub struct SubFetcher {
   stream: JStream,
@@ -17,6 +18,11 @@ pub struct SubFetcher {
 }
 
 impl SubFetcher {
+  /// Creates or reuses a JetStream stream based on the provided options.
+  ///
+  /// # Parameters
+  /// - `ctx`: JetStream context used to resolve or create the target stream.
+  /// - `options`: Configuration for the stream and durable pull consumer.
   pub async fn new(
     ctx: Arc<Context>,
     options: Arc<AckSubOptions>,
@@ -28,6 +34,8 @@ impl SubFetcher {
 
 #[async_trait]
 impl SubCtxTrait for SubFetcher {
+  /// Stream messages from the pull consumer, yielding their payloads along
+  /// with the associated acknowledgment handles.
   async fn subscribe(
     &self,
   ) -> Result<
@@ -53,6 +61,7 @@ impl SubCtxTrait for SubFetcher {
 
 #[async_trait]
 impl UnSubTrait for SubFetcher {
+  /// Deletes the durable consumer associated with this fetcher.
   async fn unsubscribe(&self) -> Result<(), Error> {
     self
       .stream
