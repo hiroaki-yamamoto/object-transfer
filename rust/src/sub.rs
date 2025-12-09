@@ -12,6 +12,11 @@ use crate::traits::{
   AckTrait, SubCtxTrait, SubOptTrait, SubTrait, UnSubTrait,
 };
 
+/// Subscriber wrapper that deserializes messages and optionally auto-acks.
+///
+/// The subscriber relies on a [`SubCtxTrait`] implementation for message
+/// retrieval and a [`SubOptTrait`] provider for decoding and acknowledgment
+/// behavior.
 pub struct Sub<T> {
   ctx: Arc<dyn SubCtxTrait + Send + Sync>,
   unsub: Option<Arc<dyn UnSubTrait + Send + Sync>>,
@@ -23,6 +28,13 @@ impl<T> Sub<T>
 where
   T: DeserializeOwned + Send + Sync,
 {
+  /// Creates a new subscriber using the provided context, optional
+  /// unsubscribe handler, and subscription options.
+  ///
+  /// # Parameters
+  /// - `ctx`: Message retrieval context responsible for producing raw items.
+  /// - `unsub`: Optional handler to cancel the subscription when requested.
+  /// - `options`: Subscription behavior such as auto-ack and payload format.
   pub async fn new(
     ctx: Arc<dyn SubCtxTrait + Send + Sync>,
     unsub: Option<Arc<dyn UnSubTrait + Send + Sync>>,
@@ -43,6 +55,9 @@ where
   T: DeserializeOwned + Send + Sync,
 {
   type Item = T;
+  /// Returns a stream of decoded messages alongside their acknowledgment
+  /// handles. When auto-acknowledgment is enabled, messages are acknowledged
+  /// before being yielded to the consumer.
   async fn subscribe(
     &self,
   ) -> Result<
@@ -71,6 +86,7 @@ impl<T> UnSubTrait for Sub<T>
 where
   T: DeserializeOwned + Send + Sync,
 {
+  /// Invokes the optional unsubscribe handler, if present.
   async fn unsubscribe(&self) -> Result<(), Error> {
     if let Some(unsub) = &self.unsub {
       unsub.unsubscribe().await?;
