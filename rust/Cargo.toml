@@ -2,6 +2,10 @@
 name = "object_transfer"
 version = "0.1.0"
 edition = "2024"
+authors = ["Hiroaki Yamamoto"]
+description = "An object transfer library for various message broker and/or protocols"
+readme = "README.md"
+
 
 [dependencies]
 async-nats = "0.45"
