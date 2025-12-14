@@ -21,7 +21,7 @@ jobs:
 
       - name: Verify version in Cargo.toml matches tag
         run: |
-          TAG_VERSION=${GITHUB_REF#refs/tags/v}
+          TAG_VERSION=${GITHUB_REF#refs/tags/}
           CARGO_VERSION=$(grep '^version' rust/Cargo.toml | head -1 | sed -E 's/version = "(.*)"/\1/')
           if [ "$TAG_VERSION" != "$CARGO_VERSION" ]; then
             echo "Version mismatch: tag is v$TAG_VERSION but Cargo.toml is $CARGO_VERSION"
