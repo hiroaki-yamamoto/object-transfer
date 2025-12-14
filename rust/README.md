@@ -4,10 +4,14 @@
 
 | Service | Status |
 |---------|--------|
+| Crates.io | [![Crates.io Version Img]][Crates.io] |
 | Code Test | [![Test Rust Code Img]][Test Rust Code] |
 
 [Test Rust Code Img]: https://github.com/hiroaki-yamamoto/object-transfer/actions/workflows/test_rust.yml/badge.svg
 [Test Rust Code]: https://github.com/hiroaki-yamamoto/object-transfer/actions/workflows/test_rust.yml
+[Crates.io Version Img]: https://img.shields.io/crates/v/object_transfer
+[Crates.io]: https://crates.io/crates/object_transfer
+
 
 ## Description
 
