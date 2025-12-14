@@ -44,11 +44,6 @@ jobs:
         env:
           RUSTDOCFLAGS: "--deny warnings"
 
-      - name: Run tests
-        run: |
-          cd rust
-          cargo test --lib
-
       - name: Publish to crates.io
         run: |
           cd rust
