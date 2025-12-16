@@ -1,3 +1,162 @@
+//! Core trait abstractions for pub/sub messaging with typed and untyped interfaces.
+//!
+//! This module provides a set of traits that abstract over different messaging
+//! backends and transport layers. The traits are organized into two main
+//! categories:
+//!
+//! ## Typed Traits
+//!
+//! These traits work with strongly-typed items:
+//! - [`PubTrait`]: Publish strongly-typed items that implement [`serde::Serialize`].
+//! - [`SubTrait`]: Subscribe to a stream of strongly-typed items that implement
+//!   [`serde::de::DeserializeOwned`].
+//! - [`AckTrait`]: Acknowledge receipt of a message.
+//! - [`UnSubTrait`]: Cancel a subscription.
+//!
+//! ## Untyped (Context) Traits
+//!
+//! These traits work with raw byte payloads and topics:
+//! - [`PubCtxTrait`]: Publish raw byte payloads to specific topics.
+//! - [`SubCtxTrait`]: Subscribe to a stream of raw byte messages from a topic.
+//!
+//! ## Additional Traits
+//!
+//! - [`SubOptTrait`]: Configure subscription options like auto-acknowledgment and format.
+//!
+//! # Dynamic Dispatch Usage
+//!
+//! These traits are designed to work seamlessly with dynamic dispatch (trait objects),
+//! enabling flexible, runtime polymorphism. Here are common patterns:
+//!
+//! ## Publishing with Dynamic Dispatch
+//!
+//! ```rust
+//! use std::sync::Arc;
+//! use object_transfer::traits::PubTrait;
+//! use serde::Serialize;
+//!
+//! #[derive(Serialize)]
+//! struct MyMessage {
+//!     data: String,
+//! }
+//!
+//! async fn send_message(publisher: &Arc<dyn PubTrait<Item = MyMessage>>) {
+//!     let msg = MyMessage { data: "hello".to_string() };
+//!     publisher.publish(&msg).await.ok();
+//! }
+//! ```
+//!
+//! ## Subscribing with Dynamic Dispatch
+//!
+//! ```rust
+//! use std::sync::Arc;
+//! use object_transfer::traits::{SubTrait, AckTrait};
+//! use serde::Deserialize;
+//!
+//! #[derive(Deserialize)]
+//! struct MyMessage {
+//!     data: String,
+//! }
+//!
+//! async fn receive_messages(
+//!     subscriber: &Arc<dyn SubTrait<Item = MyMessage>>
+//! ) {
+//!     if let Ok(mut stream) = subscriber.subscribe().await {
+//!         while let Some(Ok((msg, ack))) = stream.next().await {
+//!             // Process the message
+//!             let _ = ack.ack().await;
+//!         }
+//!     }
+//! }
+//! ```
+//!
+//! ## Working with Raw Payloads
+//!
+//! For scenarios requiring lower-level control, use context traits:
+//!
+//! ```rust
+//! use std::sync::Arc;
+//! use object_transfer::traits::PubCtxTrait;
+//! use bytes::Bytes;
+//!
+//! async fn send_raw(ctx: &Arc<dyn PubCtxTrait>) {
+//!     let payload = Bytes::from("raw data");
+//!     ctx.publish("topic/name", payload).await.ok();
+//! }
+//! ```
+//!
+//! # Static Dispatch Usage
+//!
+//! For maximum performance and compile-time guarantees, use static dispatch with
+//! generic trait bounds. This approach leverages monomorphization to eliminate
+//! runtime overhead and enable inlining.
+//!
+//! ## Publishing with Static Dispatch
+//!
+//! ```rust
+//! use object_transfer::traits::PubTrait;
+//! use serde::Serialize;
+//!
+//! #[derive(Serialize)]
+//! struct MyMessage {
+//!     data: String,
+//! }
+//!
+//! async fn send_message<P: PubTrait<Item = MyMessage>>(publisher: &P) {
+//!     let msg = MyMessage { data: "hello".to_string() };
+//!     publisher.publish(&msg).await.ok();
+//! }
+//! ```
+//!
+//! ## Subscribing with Static Dispatch
+//!
+//! ```rust
+//! use object_transfer::traits::SubTrait;
+//! use serde::Deserialize;
+//!
+//! #[derive(Deserialize)]
+//! struct MyMessage {
+//!     data: String,
+//! }
+//!
+//! async fn receive_messages<S: SubTrait<Item = MyMessage>>(subscriber: &S) {
+//!     if let Ok(mut stream) = subscriber.subscribe().await {
+//!         while let Some(Ok((msg, ack))) = stream.next().await {
+//!             // Process the message
+//!             let _ = ack.ack().await;
+//!         }
+//!     }
+//! }
+//! ```
+//!
+//! ## Generic Over Multiple Trait Implementations
+//!
+//! Static dispatch excels when working with multiple trait implementations:
+//!
+//! ```rust
+//! use object_transfer::traits::{PubTrait, SubTrait};
+//! use serde::{Serialize, Deserialize};
+//!
+//! #[derive(Serialize, Deserialize)]
+//! struct Event {
+//!     id: u64,
+//! }
+//!
+//! async fn relay_events<P, S>(publisher: &P, subscriber: &S)
+//! where
+//!     P: PubTrait<Item = Event>,
+//!     S: SubTrait<Item = Event>,
+//! {
+//!     if let Ok(mut stream) = subscriber.subscribe().await {
+//!         while let Some(Ok((event, ack))) = stream.next().await {
+//!             publisher.publish(&event).await.ok();
+//!             let _ = ack.ack().await;
+//!         }
+//!     }
+//! }
+//! ```
+//!
+
 use ::bytes::Bytes;
 use ::std::sync::Arc;
 

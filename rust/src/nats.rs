@@ -1,3 +1,8 @@
+//! NATS connector module for pub/sub messaging.
+//!
+//! This module provides a NATS-based connector,
+//! enabling asynchronous message publishing and subscription management.
+
 pub mod impl_ack;
 pub mod impl_ctx;
 pub mod options;
