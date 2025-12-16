@@ -52,6 +52,7 @@
 //! use std::sync::Arc;
 //! use object_transfer::traits::{SubTrait, AckTrait};
 //! use serde::Deserialize;
+//! use futures::stream::StreamExt;
 //!
 //! #[derive(Deserialize)]
 //! struct MyMessage {
@@ -111,8 +112,9 @@
 //! ## Subscribing with Static Dispatch
 //!
 //! ```rust
-//! use object_transfer::traits::SubTrait;
+//! use object_transfer::traits::{SubTrait, AckTrait};
 //! use serde::Deserialize;
+//! use futures::stream::StreamExt;
 //!
 //! #[derive(Deserialize)]
 //! struct MyMessage {
@@ -134,8 +136,9 @@
 //! Static dispatch excels when working with multiple trait implementations:
 //!
 //! ```rust
-//! use object_transfer::traits::{PubTrait, SubTrait};
+//! use object_transfer::traits::{PubTrait, SubTrait, AckTrait};
 //! use serde::{Serialize, Deserialize};
+//! use futures::stream::StreamExt;
 //!
 //! #[derive(Serialize, Deserialize)]
 //! struct Event {
