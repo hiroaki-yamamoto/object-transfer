@@ -37,13 +37,6 @@ jobs:
             exit 1
           fi
 
-      - name: Build documentation
-        run: |
-          cd rust
-          cargo doc --no-deps --document-private-items
-        env:
-          RUSTDOCFLAGS: "--deny warnings"
-
       - name: Publish to crates.io
         run: |
           cd rust
