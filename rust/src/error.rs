@@ -1,3 +1,6 @@
+//! Error definitions shared across the crate.
+//! Wraps NATS, JetStream, and serialization errors under a single type.
+
 use ::thiserror::Error;
 
 /// Centralized error type for the messaging system.

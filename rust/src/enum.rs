@@ -1,3 +1,7 @@
+//! Enumerations shared across the crate.
+//! Currently only exposes the `Format` enum representing supported
+//! serialization/deserialization formats.
+
 #[cfg(test)]
 use ::std::string::ToString;
 
