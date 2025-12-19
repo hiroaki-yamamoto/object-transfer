@@ -40,7 +40,7 @@
 //!     data: String,
 //! }
 //!
-//! async fn send_message(publisher: &Arc<dyn PubTrait<Item = MyMessage>>) {
+//! async fn send_message(publisher: Arc<dyn PubTrait<Item = MyMessage>>) {
 //!     let msg = MyMessage { data: "hello".to_string() };
 //!     publisher.publish(&msg).await.ok();
 //! }
@@ -60,7 +60,7 @@
 //! }
 //!
 //! async fn receive_messages(
-//!     subscriber: &Arc<dyn SubTrait<Item = MyMessage>>
+//!     subscriber: Arc<dyn SubTrait<Item = MyMessage>>
 //! ) {
 //!     if let Ok(mut stream) = subscriber.subscribe().await {
 //!         while let Some(Ok((msg, ack))) = stream.next().await {
@@ -80,7 +80,7 @@
 //! use object_transfer::traits::PubCtxTrait;
 //! use bytes::Bytes;
 //!
-//! async fn send_raw(ctx: &Arc<dyn PubCtxTrait>) {
+//! async fn send_raw(ctx: Arc<dyn PubCtxTrait>) {
 //!     let payload = Bytes::from("raw data");
 //!     ctx.publish("topic/name", payload).await.ok();
 //! }
