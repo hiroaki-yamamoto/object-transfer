@@ -18,6 +18,52 @@ use crate::traits::{
 /// The subscriber relies on a [`SubCtxTrait`] implementation for message
 /// retrieval and a [`SubOptTrait`] provider for decoding and acknowledgment
 /// behavior.
+///
+/// # Example
+///
+/// ```rust,no_run
+/// use std::sync::Arc;
+/// use futures::StreamExt;
+/// use serde::Deserialize;
+/// use object_transfer::{Format, Sub};
+/// use object_transfer::nats::{AckSubOptions, SubFetcher};
+/// use object_transfer::traits::{SubTrait, UnSubTrait};
+///
+/// #[derive(Deserialize, Debug)]
+/// struct Event {
+///   id: u64,
+///   name: String,
+/// }
+///
+/// #[tokio::main]
+/// async fn main() -> Result<(), Box<dyn std::error::Error>> {
+///   // Build a JetStream context and configure a durable pull consumer.
+///   let client = async_nats::connect("demo.nats.io").await?;
+///   let js = Arc::new(async_nats::jetstream::new(client));
+///
+///   let options = Arc::new(
+///     AckSubOptions::new(Format::JSON, Arc::from("events"))
+///       .subjects(vec!["events.user_created"])
+///       .durable_name("user-created")
+///       .auto_ack(false),
+///   );
+///
+///   // SubFetcher implements both SubCtxTrait and UnSubTrait.
+///   let fetcher = Arc::new(SubFetcher::new(js, options.clone()).await?);
+///   let unsub = Some(fetcher.clone() as Arc<dyn UnSubTrait + Send + Sync>);
+///
+///   let subscriber: Sub<Event> = Sub::new(fetcher, unsub, options).await?;
+///   let mut stream = subscriber.subscribe().await?;
+///
+///   while let Some(Ok((event, ack))) = stream.next().await {
+///     println!("received {:?}", event);
+///     // Manually ack since auto_ack(false).
+///     ack.ack().await?;
+///   }
+///
+///   Ok(())
+/// }
+/// ```
 pub struct Sub<T> {
   ctx: Arc<dyn SubCtxTrait + Send + Sync>,
   unsub: Option<Arc<dyn UnSubTrait + Send + Sync>>,

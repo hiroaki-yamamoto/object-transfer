@@ -13,6 +13,42 @@ use crate::traits::{PubCtxTrait, PubTrait};
 /// The publisher encodes messages according to the configured [`Format`] and
 /// delegates the actual publish call to an injected [`PubCtxTrait`] so it can
 /// work with different backends.
+///
+/// # Example
+///
+/// ```rust,no_run
+/// use std::sync::Arc;
+/// use serde::Serialize;
+/// use object_transfer::{Format, Pub};
+/// use object_transfer::traits::{PubCtxTrait, PubTrait};
+///
+/// #[derive(Serialize)]
+/// struct UserCreated {
+///   id: u64,
+///   name: String,
+/// }
+///
+/// #[tokio::main]
+/// async fn main() -> Result<(), Box<dyn std::error::Error>> {
+///   let client = async_nats::connect("demo.nats.io").await?;
+///   let js = async_nats::jetstream::new(client);
+///
+///   // JetStream context satisfies `PubCtxTrait`, so we can publish typed events.
+///   let publisher: Pub<UserCreated> = Pub::new(
+///     Arc::new(js),
+///     "events.user_created",
+///     Format::JSON,
+///   )?;
+///
+///   let event = UserCreated {
+///     id: 42,
+///     name: "Jane Doe".to_string(),
+///   };
+///
+///   publisher.publish(&event).await?;
+///   Ok(())
+/// }
+/// ```
 pub struct Pub<T> {
   ctx: Arc<dyn PubCtxTrait + Send + Sync>,
   subject: String,
