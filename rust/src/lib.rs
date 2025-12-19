@@ -8,7 +8,7 @@
 //!
 //! | Service | Status |
 //! |---------|--------|
-//! | Rust Code Test | [![Test Rust Code Img]][Test Rust Code] |
+//! | | Crates.io | [![Crates.io Version Img]][Crates.io] |
 //! | Code Test | [![Test Rust Code Img]][Test Rust Code] |
 //!
 //! [Test Rust Code Img]: https://github.com/hiroaki-yamamoto/object-transfer/actions/workflows/test_rust.yml/badge.svg
