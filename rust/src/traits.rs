@@ -168,7 +168,7 @@ use ::futures::stream::BoxStream;
 use ::serde::{Serialize, de::DeserializeOwned};
 
 use crate::r#enum::Format;
-use crate::error::{Error, PubError};
+use crate::error::{AckError, PubError, SubError, UnSubError};
 
 #[cfg(test)]
 use crate::tests::entity::TestEntity;
@@ -193,7 +193,7 @@ pub trait PubTrait {
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait AckTrait {
-  async fn ack(&self) -> Result<(), Error>;
+  async fn ack(&self) -> Result<(), AckError>;
 }
 
 /// Subscription interface returning a stream of decoded items and ack handles.
@@ -203,8 +203,8 @@ pub trait SubTrait {
   async fn subscribe(
     &self,
   ) -> Result<
-    BoxStream<Result<(Self::Item, Arc<dyn AckTrait + Send + Sync>), Error>>,
-    Error,
+    BoxStream<Result<(Self::Item, Arc<dyn AckTrait + Send + Sync>), SubError>>,
+    SubError,
   >;
 }
 
@@ -212,7 +212,7 @@ pub trait SubTrait {
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait UnSubTrait {
-  async fn unsubscribe(&self) -> Result<(), Error>;
+  async fn unsubscribe(&self) -> Result<(), UnSubError>;
 }
 
 /// Context capable of publishing raw byte payloads.
@@ -234,8 +234,8 @@ pub trait SubCtxTrait {
   async fn subscribe(
     &self,
   ) -> Result<
-    BoxStream<Result<(Bytes, Arc<dyn AckTrait + Send + Sync>), Error>>,
-    Error,
+    BoxStream<Result<(Bytes, Arc<dyn AckTrait + Send + Sync>), SubError>>,
+    SubError,
   >;
 }
 

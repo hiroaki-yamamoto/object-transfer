@@ -10,7 +10,7 @@ use ::futures::stream::BoxStream;
 use ::futures::{StreamExt, TryStreamExt};
 use ::std::boxed::Box;
 
-use crate::error::{Error, PubError};
+use crate::error::{PubError, SubError};
 use crate::traits::{AckTrait, PubCtxTrait, SubCtxTrait};
 
 #[async_trait]
@@ -32,21 +32,19 @@ macro_rules! impl_sub_ctx_trait {
       async fn subscribe(
         &self,
       ) -> Result<
-        BoxStream<Result<(Bytes, Arc<dyn AckTrait + Send + Sync>), Error>>,
-        Error,
+        BoxStream<Result<(Bytes, Arc<dyn AckTrait + Send + Sync>), SubError>>,
+        SubError,
       > {
         let messages =
-          self
-            .messages()
-            .await?
-            .map_err(Error::from)
-            .and_then(async |msg| {
+          self.messages().await?.map_err(SubError::from).and_then(
+            async |msg| {
               let (msg, acker) = msg.split();
               return Ok((
                 msg.payload.clone(),
                 Arc::new(acker) as Arc<dyn AckTrait + Send + Sync>,
               ));
-            });
+            },
+          );
         Ok(messages.boxed())
       }
     }
