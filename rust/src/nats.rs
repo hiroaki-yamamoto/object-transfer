@@ -9,5 +9,6 @@ pub mod impl_ctx;
 pub mod options;
 mod sub_fetcher;
 
+pub use errors::NatsSubFetcherError;
 pub use options::AckSubOptions;
 pub use sub_fetcher::SubFetcher;
