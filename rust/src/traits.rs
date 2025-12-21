@@ -168,7 +168,7 @@ use ::futures::stream::BoxStream;
 use ::serde::{Serialize, de::DeserializeOwned};
 
 use crate::r#enum::Format;
-use crate::error::Error;
+use crate::error::{Error, PubError};
 
 #[cfg(test)]
 use crate::tests::entity::TestEntity;
@@ -186,7 +186,7 @@ pub trait PubTrait {
   ///
   /// # Parameters
   /// - `obj`: The typed item to serialize and send to the backing transport.
-  async fn publish(&self, obj: &Self::Item) -> Result<(), Error>;
+  async fn publish(&self, obj: &Self::Item) -> Result<(), PubError>;
 }
 
 /// Acknowledge receipt of a message.
@@ -224,7 +224,8 @@ pub trait PubCtxTrait {
   /// # Parameters
   /// - `topic`: Subject or channel name the payload should be delivered to.
   /// - `payload`: Serialized bytes to forward to the transport.
-  async fn publish(&self, topic: &str, payload: Bytes) -> Result<(), Error>;
+  async fn publish(&self, topic: &str, payload: Bytes)
+  -> Result<(), PubError>;
 }
 
 /// Context capable of producing a stream of raw messages with ack handles.

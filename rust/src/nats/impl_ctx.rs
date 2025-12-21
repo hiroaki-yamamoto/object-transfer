@@ -10,12 +10,16 @@ use ::futures::stream::BoxStream;
 use ::futures::{StreamExt, TryStreamExt};
 use ::std::boxed::Box;
 
-use crate::error::Error;
+use crate::error::{Error, PubError};
 use crate::traits::{AckTrait, PubCtxTrait, SubCtxTrait};
 
 #[async_trait]
 impl PubCtxTrait for Context {
-  async fn publish(&self, topic: &str, payload: Bytes) -> Result<(), Error> {
+  async fn publish(
+    &self,
+    topic: &str,
+    payload: Bytes,
+  ) -> Result<(), PubError> {
     self.publish(topic.to_string(), payload).await?.await?;
     return Ok(());
   }

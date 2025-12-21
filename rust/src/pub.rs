@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use serde::Serialize;
 
 use crate::r#enum::Format;
-use crate::error::Error;
+use crate::error::PubError;
 use crate::traits::{PubCtxTrait, PubTrait};
 
 /// Publisher for serializable messages using a pluggable context.
@@ -91,12 +91,12 @@ where
   ///
   /// # Parameters
   /// - `obj`: The typed value to encode and send to the subject.
-  async fn publish(&self, obj: &T) -> Result<(), Error> {
+  async fn publish(&self, obj: &T) -> Result<(), PubError> {
     let payload = match self.format {
       Format::MessagePack => {
-        rmp_serde::to_vec(obj).map_err(Error::MessagePackEncode)?
+        rmp_serde::to_vec(obj).map_err(PubError::MessagePackEncode)?
       }
-      Format::JSON => serde_json::to_vec(obj).map_err(Error::Json)?,
+      Format::JSON => serde_json::to_vec(obj).map_err(PubError::Json)?,
     };
     self
       .ctx
@@ -156,11 +156,11 @@ mod tests {
       .expect_publish()
       .withf(move |subj, _| subj == subject)
       .times(1)
-      .returning(|_, _| Err(Error::ErrorTest));
+      .returning(|_, _| Err(PubError::ErrorTest));
     let publisher: Pub<TestEntity> =
       Pub::new(Arc::new(ctx), subject, Format::JSON);
     let res = publisher.publish(&entity).await;
     let err_msg = res.unwrap_err().to_string();
-    assert_eq!(err_msg, Error::ErrorTest.to_string());
+    assert_eq!(err_msg, PubError::ErrorTest.to_string());
   }
 }
