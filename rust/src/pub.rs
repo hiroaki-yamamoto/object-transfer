@@ -38,7 +38,7 @@ use crate::traits::{PubCtxTrait, PubTrait};
 ///     Arc::new(js),
 ///     "events.user_created",
 ///     Format::JSON,
-///   )?;
+///   );
 ///
 ///   let event = UserCreated {
 ///     id: 42,
@@ -70,13 +70,13 @@ where
     ctx: Arc<dyn PubCtxTrait + Send + Sync>,
     subject: impl Into<String>,
     format: Format,
-  ) -> Result<Self, Error> {
-    Ok(Self {
+  ) -> Self {
+    Self {
       ctx,
       subject: subject.into(),
       format,
       _phantom: PhantomData,
-    })
+    }
   }
 }
 
@@ -132,8 +132,7 @@ mod tests {
       .with(eq(subject.clone()), eq(correct))
       .times(1)
       .returning(|_, _| Ok(()));
-    let publisher: Pub<TestEntity> =
-      Pub::new(Arc::new(ctx), subject, format).unwrap();
+    let publisher: Pub<TestEntity> = Pub::new(Arc::new(ctx), subject, format);
     let res = publisher.publish(&entity).await;
     assert!(res.is_ok());
   }
@@ -159,7 +158,7 @@ mod tests {
       .times(1)
       .returning(|_, _| Err(Error::ErrorTest));
     let publisher: Pub<TestEntity> =
-      Pub::new(Arc::new(ctx), subject, Format::JSON).unwrap();
+      Pub::new(Arc::new(ctx), subject, Format::JSON);
     let res = publisher.publish(&entity).await;
     let err_msg = res.unwrap_err().to_string();
     assert_eq!(err_msg, Error::ErrorTest.to_string());
