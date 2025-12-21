@@ -36,7 +36,7 @@ pub enum PubError {
 /// Error type for subscription operations in the messaging system.
 #[derive(Error, Debug)]
 pub enum SubError {
-  /// Acknowledgment error
+  /// Acknowledgment error.
   #[error("Acknowledgment error: {0}")]
   AckError(#[from] AckError),
   /// Error originating from NATS or its JetStream components.
