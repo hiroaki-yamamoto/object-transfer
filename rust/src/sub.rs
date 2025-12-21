@@ -52,7 +52,7 @@ use crate::traits::{
 ///   let fetcher = Arc::new(SubFetcher::new(js, options.clone()).await?);
 ///   let unsub = Some(fetcher.clone() as Arc<dyn UnSubTrait + Send + Sync>);
 ///
-///   let subscriber: Sub<Event> = Sub::new(fetcher, unsub, options).await?;
+///   let subscriber: Sub<Event> = Sub::new(fetcher, unsub, options);
 ///   let mut stream = subscriber.subscribe().await?;
 ///
 ///   while let Some(Ok((event, ack))) = stream.next().await {
@@ -82,17 +82,17 @@ where
   /// - `ctx`: Message retrieval context responsible for producing raw items.
   /// - `unsub`: Optional handler to cancel the subscription when requested.
   /// - `options`: Subscription behavior such as auto-ack and payload format.
-  pub async fn new(
+  pub fn new(
     ctx: Arc<dyn SubCtxTrait + Send + Sync>,
     unsub: Option<Arc<dyn UnSubTrait + Send + Sync>>,
     options: Arc<dyn SubOptTrait + Send + Sync>,
-  ) -> Result<Self, Error> {
-    Ok(Self {
+  ) -> Self {
+    Self {
       ctx,
       unsub,
       options,
       _marker: PhantomData,
-    })
+    }
   }
 }
 
@@ -193,9 +193,7 @@ mod test {
       ctx,
       None,
       Arc::new(options) as Arc<dyn SubOptTrait + Send + Sync>,
-    )
-    .await
-    .unwrap();
+    );
     let stream = subscribe.subscribe().await.unwrap();
     let obtained: Vec<TestEntity> = stream
       .try_collect::<Vec<_>>()
@@ -246,9 +244,7 @@ mod test {
       ctx,
       None,
       Arc::new(options) as Arc<dyn SubOptTrait + Send + Sync>,
-    )
-    .await
-    .unwrap();
+    );
     let stream = subscribe.subscribe().await.unwrap();
     let obtained: Vec<String> = stream
       .collect::<Vec<_>>()

@@ -41,9 +41,7 @@ async fn setup(format: Format) -> Option<(Pub<MyObj>, Sub<MyObj>)> {
   );
   let subfetcher =
     Arc::new(SubFetcher::new(js, options.clone()).await.unwrap());
-  let reader = Sub::new(subfetcher.clone(), Some(subfetcher), options)
-    .await
-    .ok()?;
+  let reader = Sub::new(subfetcher.clone(), Some(subfetcher), options);
   Some((publisher, reader))
 }
 
