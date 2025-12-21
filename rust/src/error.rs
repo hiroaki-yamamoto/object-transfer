@@ -48,7 +48,7 @@ pub enum SubError {
   /// Error during the creation of a JetStream consumer.
   #[error("NATS JetStream Consumer Error: {0}")]
   NatsJetStreamConsumer(#[from] async_nats::jetstream::stream::ConsumerError),
-  /// Errror retrieving messages from a NATS JetStream Pull Consumer.
+  /// Error retrieving messages from a NATS JetStream Pull Consumer.
   #[error("NATS JetStream Pull Consumer message error: {0}")]
   NatsPullMessage(
     #[from] async_nats::jetstream::consumer::pull::MessagesError,
