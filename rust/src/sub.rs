@@ -7,7 +7,7 @@ use futures::stream::BoxStream;
 use serde::de::DeserializeOwned;
 
 use crate::r#enum::Format;
-use crate::error::Error;
+use crate::error::{SubError, UnSubError};
 use crate::traits::{
   AckTrait, SubCtxTrait, SubOptTrait, SubTrait, UnSubTrait,
 };
@@ -108,8 +108,8 @@ where
   async fn subscribe(
     &self,
   ) -> Result<
-    BoxStream<Result<(Self::Item, Arc<dyn AckTrait + Send + Sync>), Error>>,
-    Error,
+    BoxStream<Result<(Self::Item, Arc<dyn AckTrait + Send + Sync>), SubError>>,
+    SubError,
   > {
     let messages = self.ctx.subscribe().await?;
     let stream = messages.and_then(async move |(msg, acker)| {
@@ -118,9 +118,11 @@ where
       }
       let data = match self.options.get_format() {
         Format::MessagePack => {
-          rmp_serde::from_slice::<T>(&msg).map_err(Error::MessagePackDecode)
+          rmp_serde::from_slice::<T>(&msg).map_err(SubError::MessagePackDecode)
         }
-        Format::JSON => serde_json::from_slice::<T>(&msg).map_err(Error::Json),
+        Format::JSON => {
+          serde_json::from_slice::<T>(&msg).map_err(SubError::Json)
+        }
       }?;
       Ok((data, acker))
     });
@@ -134,7 +136,7 @@ where
   T: DeserializeOwned + Send + Sync,
 {
   /// Invokes the optional unsubscribe handler, if present.
-  async fn unsubscribe(&self) -> Result<(), Error> {
+  async fn unsubscribe(&self) -> Result<(), UnSubError> {
     if let Some(unsub) = &self.unsub {
       unsub.unsubscribe().await?;
     }
@@ -149,6 +151,7 @@ mod test {
   use ::rmp_serde::to_vec as to_msgpack;
   use ::serde_json::to_vec as jsonify;
 
+  use crate::error::AckError;
   use crate::tests::{entity::TestEntity, subscribe::SubscribeMock};
   use crate::traits::{MockAckTrait, MockSubOptTrait};
 
@@ -231,7 +234,7 @@ mod test {
       let mut ack_mock = MockAckTrait::new();
       ack_mock
         .expect_ack()
-        .returning(|| Err(Error::ErrorTest))
+        .returning(|| Err(AckError::ErrorTest))
         .once();
       Arc::new(ack_mock)
     }));
@@ -252,7 +255,10 @@ mod test {
       .iter()
       .filter_map(|res| res.as_ref().map_err(|err| err.to_string()).err())
       .collect();
-    assert_eq!(obtained, vec![Error::ErrorTest.to_string()]);
+    assert_eq!(
+      obtained,
+      vec![SubError::AckError(AckError::ErrorTest).to_string()]
+    );
   }
 
   #[tokio::test]

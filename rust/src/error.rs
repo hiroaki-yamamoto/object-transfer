@@ -3,6 +3,18 @@
 
 use ::thiserror::Error;
 
+/// Error type for acknowledgment operations in the messaging system.
+#[derive(Error, Debug)]
+pub enum AckError {
+  /// Error during acknowledgment from Nats.
+  #[error("NATS error: {0}")]
+  Nats(#[from] async_nats::Error),
+  /// Generic error variant for miscellaneous errors (Test use only).
+  #[cfg(test)]
+  #[error("Error Test")]
+  ErrorTest,
+}
+
 /// Error type for publishing operations in the messaging system.
 #[derive(Error, Debug)]
 pub enum PubError {
@@ -21,24 +33,22 @@ pub enum PubError {
   ErrorTest,
 }
 
-/// Centralized error type for the messaging system.
+/// Error type for subscription operations in the messaging system.
 #[derive(Error, Debug)]
-pub enum Error {
+pub enum SubError {
+  /// Acknowledgment error.
+  #[error("Acknowledgment error: {0}")]
+  AckError(#[from] AckError),
   /// Error originating from NATS or its JetStream components.
   #[error("NATS error: {0}")]
   Nats(#[from] async_nats::Error),
-  #[error("NATS JetStream Stream Creation Error: {0}")]
-  /// Error during the creation of a JetStream stream.
-  JetStreamStreamCreation(
-    #[from] async_nats::jetstream::context::CreateStreamError,
-  ),
-  /// Error during the creation of a JetStream consumer.
-  #[error("NATS JetStream Consumer Error: {0}")]
-  NatsJetStreamConsumer(#[from] async_nats::jetstream::stream::ConsumerError),
   /// Nats Streaming Error.
   #[error("NATS JetStream stream error: {0}")]
   NatsStream(#[from] async_nats::jetstream::consumer::StreamError),
-  /// Errror retrieving messages from a NATS JetStream Pull Consumer.
+  /// Error during the creation of a JetStream consumer.
+  #[error("NATS JetStream Consumer Error: {0}")]
+  NatsJetStreamConsumer(#[from] async_nats::jetstream::stream::ConsumerError),
+  /// Error retrieving messages from a NATS JetStream Pull Consumer.
   #[error("NATS JetStream Pull Consumer message error: {0}")]
   NatsPullMessage(
     #[from] async_nats::jetstream::consumer::pull::MessagesError,
@@ -68,4 +78,12 @@ pub enum Error {
   #[cfg(test)]
   #[error("Error Test")]
   ErrorTest,
+}
+
+/// Error type for unsubscribe operations in the messaging system.
+#[derive(Error, Debug)]
+pub enum UnSubError {
+  /// Nats Unsubscribe Error.
+  #[error("NATS Unsubscribe error: {0}")]
+  NatsUnsubscribe(#[from] async_nats::jetstream::stream::ConsumerError),
 }

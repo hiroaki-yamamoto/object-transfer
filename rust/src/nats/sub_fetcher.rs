@@ -6,8 +6,9 @@ use ::bytes::Bytes;
 use ::futures::StreamExt;
 use ::futures::stream::BoxStream;
 
+use super::errors::NatsSubFetcherError;
 use super::options::AckSubOptions;
-use crate::error::Error;
+use crate::error::{SubError, UnSubError};
 use crate::traits::{AckTrait, SubCtxTrait, UnSubTrait};
 
 /// Fetches pull-based JetStream messages using the configured stream options.
@@ -26,7 +27,7 @@ impl SubFetcher {
   pub async fn new(
     ctx: Arc<Context>,
     options: Arc<AckSubOptions>,
-  ) -> Result<Self, Error> {
+  ) -> Result<Self, NatsSubFetcherError> {
     let stream = ctx.get_or_create_stream(options.stream_cfg.clone()).await?;
     Ok(Self { stream, options })
   }
@@ -39,8 +40,8 @@ impl SubCtxTrait for SubFetcher {
   async fn subscribe(
     &self,
   ) -> Result<
-    BoxStream<Result<(Bytes, Arc<dyn AckTrait + Send + Sync>), Error>>,
-    Error,
+    BoxStream<Result<(Bytes, Arc<dyn AckTrait + Send + Sync>), SubError>>,
+    SubError,
   > {
     let consumer = self
       .stream
@@ -62,7 +63,7 @@ impl SubCtxTrait for SubFetcher {
 #[async_trait]
 impl UnSubTrait for SubFetcher {
   /// Deletes the durable consumer associated with this fetcher.
-  async fn unsubscribe(&self) -> Result<(), Error> {
+  async fn unsubscribe(&self) -> Result<(), UnSubError> {
     self
       .stream
       .delete_consumer(&self.options.pull_cfg.durable_name.clone().unwrap())
