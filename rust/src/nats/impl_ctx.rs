@@ -7,7 +7,7 @@ use ::async_nats::jetstream::consumer::{
 use ::async_trait::async_trait;
 use ::bytes::Bytes;
 use ::futures::stream::BoxStream;
-use ::futures::{StreamExt, TryStreamExt};
+use ::futures::{StreamExt, TryFutureExt, TryStreamExt};
 use ::std::boxed::Box;
 
 use crate::errors::{PubError, SubError};
@@ -20,7 +20,12 @@ impl PubCtxTrait for Context {
     topic: &str,
     payload: Bytes,
   ) -> Result<(), PubError> {
-    self.publish(topic.to_string(), payload).await?.await?;
+    self
+      .publish(topic.to_string(), payload)
+      .map_err(|e| PubError::BrokerError(e.into()))
+      .await?
+      .await
+      .map_err(|e| PubError::BrokerError(e.into()))?;
     return Ok(());
   }
 }

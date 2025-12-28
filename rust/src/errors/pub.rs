@@ -1,11 +1,13 @@
 use ::thiserror::Error;
 
+use super::broker::BrokerError;
+
 /// Error type for publishing operations in the messaging system.
 #[derive(Error, Debug)]
 pub enum PubError {
-  /// Error during the publishing of a message to a Nats JetStream context.
-  #[error("NATS JetStream publish error: {0}")]
-  NatsPublish(#[from] async_nats::jetstream::context::PublishError),
+  /// Error during broker operations.
+  #[error("Broker error: {0}")]
+  BrokerError(#[from] BrokerError),
   /// Error during message serialization or deserialization to/from JSON.
   #[error("JSON error: {0}")]
   Json(#[from] serde_json::Error),
