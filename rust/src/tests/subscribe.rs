@@ -5,7 +5,7 @@ use ::bytes::Bytes;
 use ::futures::stream::{BoxStream, StreamExt, iter};
 use ::serde::de::DeserializeOwned;
 
-use crate::error::SubError;
+use crate::errors::SubError;
 use crate::traits::{AckTrait, SubCtxTrait, SubTrait};
 
 pub struct SubscribeMock<Entity> {

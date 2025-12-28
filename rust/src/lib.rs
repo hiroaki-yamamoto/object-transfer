@@ -18,7 +18,7 @@
 
 mod ack_noop;
 pub mod r#enum;
-pub mod error;
+pub mod errors;
 pub mod nats;
 mod r#pub;
 mod sub;

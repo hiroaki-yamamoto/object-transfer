@@ -2,7 +2,7 @@ use async_nats::jetstream::message::Acker;
 use async_trait::async_trait;
 use futures::TryFutureExt;
 
-use crate::error::AckError;
+use crate::errors::AckError;
 use crate::traits::AckTrait;
 
 #[async_trait]

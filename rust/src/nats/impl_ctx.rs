@@ -10,7 +10,7 @@ use ::futures::stream::BoxStream;
 use ::futures::{StreamExt, TryStreamExt};
 use ::std::boxed::Box;
 
-use crate::error::{PubError, SubError};
+use crate::errors::{PubError, SubError};
 use crate::traits::{AckTrait, PubCtxTrait, SubCtxTrait};
 
 #[async_trait]

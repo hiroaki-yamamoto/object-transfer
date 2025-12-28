@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use serde::Serialize;
 
 use crate::r#enum::Format;
-use crate::error::PubError;
+use crate::errors::PubError;
 use crate::traits::{PubCtxTrait, PubTrait};
 
 /// Publisher for serializable messages using a pluggable context.

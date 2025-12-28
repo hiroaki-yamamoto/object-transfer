@@ -8,7 +8,7 @@ use ::futures::stream::BoxStream;
 
 use super::errors::NatsSubFetcherError;
 use super::options::AckSubOptions;
-use crate::error::{SubError, UnSubError};
+use crate::errors::{SubError, UnSubError};
 use crate::traits::{AckTrait, SubCtxTrait, UnSubTrait};
 
 /// Fetches pull-based JetStream messages using the configured stream options.
