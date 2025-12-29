@@ -40,16 +40,18 @@ macro_rules! impl_sub_ctx_trait {
         BoxStream<Result<(Bytes, Arc<dyn AckTrait + Send + Sync>), SubError>>,
         SubError,
       > {
-        let messages =
-          self.messages().await?.map_err(SubError::from).and_then(
-            async |msg| {
-              let (msg, acker) = msg.split();
-              return Ok((
-                msg.payload.clone(),
-                Arc::new(acker) as Arc<dyn AckTrait + Send + Sync>,
-              ));
-            },
-          );
+        let messages = self
+          .messages()
+          .map_err(|e| SubError::BrokerError(e.into()))
+          .await?
+          .map_err(|e| SubError::BrokerError(e.into()))
+          .and_then(async |msg| {
+            let (msg, acker) = msg.split();
+            return Ok((
+              msg.payload.clone(),
+              Arc::new(acker) as Arc<dyn AckTrait + Send + Sync>,
+            ));
+          });
         Ok(messages.boxed())
       }
     }
