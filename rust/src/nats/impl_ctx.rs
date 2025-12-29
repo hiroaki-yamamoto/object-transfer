@@ -26,7 +26,7 @@ impl PubCtxTrait for Context {
       .await?
       .await
       .map_err(|e| PubError::BrokerError(e.into()))?;
-    return Ok(());
+    Ok(())
   }
 }
 
@@ -47,10 +47,10 @@ macro_rules! impl_sub_ctx_trait {
           .map_err(|e| SubError::BrokerError(e.into()))
           .and_then(async |msg| {
             let (msg, acker) = msg.split();
-            return Ok((
+            Ok((
               msg.payload.clone(),
               Arc::new(acker) as Arc<dyn AckTrait + Send + Sync>,
-            ));
+            ))
           });
         Ok(messages.boxed())
       }

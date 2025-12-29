@@ -20,6 +20,6 @@ where
   T: Debug + Display + Clone + PartialEq + Send + Sync + 'static,
 {
   fn from(e: NatsKindError<T>) -> Self {
-    return BrokerError(Box::new(e));
+    BrokerError::new(e)
   }
 }

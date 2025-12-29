@@ -8,9 +8,9 @@ use crate::traits::AckTrait;
 #[async_trait]
 impl AckTrait for Acker {
   async fn ack(&self) -> Result<(), AckError> {
-    return self
+    self
       .ack()
       .map_err(|e| AckError::BrokerError(e.into()))
-      .await;
+      .await
   }
 }
