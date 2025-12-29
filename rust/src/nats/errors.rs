@@ -19,6 +19,7 @@ impl<T> From<NatsKindError<T>> for BrokerError
 where
   T: Debug + Display + Clone + PartialEq + Send + Sync + 'static,
 {
+  /// Converts the error from brokers into a BrokerError.
   fn from(e: NatsKindError<T>) -> Self {
     BrokerError::new(e)
   }
