@@ -1,5 +1,7 @@
 //! Error definitions shared across the crate.
-//! Wraps NATS, JetStream, and serialization errors under a single type.
+//! Defines high-level error types (AckError, PubError, SubError, UnSubError)
+//! that use BrokerError as a common wrapper for NATS, JetStream, and
+//! serialization errors.
 
 mod ack;
 mod broker;
