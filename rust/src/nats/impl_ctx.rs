@@ -7,10 +7,10 @@ use ::async_nats::jetstream::consumer::{
 use ::async_trait::async_trait;
 use ::bytes::Bytes;
 use ::futures::stream::BoxStream;
-use ::futures::{StreamExt, TryStreamExt};
+use ::futures::{StreamExt, TryFutureExt, TryStreamExt};
 use ::std::boxed::Box;
 
-use crate::error::{PubError, SubError};
+use crate::errors::{PubError, SubError};
 use crate::traits::{AckTrait, PubCtxTrait, SubCtxTrait};
 
 #[async_trait]
@@ -20,8 +20,13 @@ impl PubCtxTrait for Context {
     topic: &str,
     payload: Bytes,
   ) -> Result<(), PubError> {
-    self.publish(topic.to_string(), payload).await?.await?;
-    return Ok(());
+    self
+      .publish(topic.to_string(), payload)
+      .map_err(|e| PubError::BrokerError(e.into()))
+      .await?
+      .await
+      .map_err(|e| PubError::BrokerError(e.into()))?;
+    Ok(())
   }
 }
 
@@ -35,16 +40,18 @@ macro_rules! impl_sub_ctx_trait {
         BoxStream<Result<(Bytes, Arc<dyn AckTrait + Send + Sync>), SubError>>,
         SubError,
       > {
-        let messages =
-          self.messages().await?.map_err(SubError::from).and_then(
-            async |msg| {
-              let (msg, acker) = msg.split();
-              return Ok((
-                msg.payload.clone(),
-                Arc::new(acker) as Arc<dyn AckTrait + Send + Sync>,
-              ));
-            },
-          );
+        let messages = self
+          .messages()
+          .map_err(|e| SubError::BrokerError(e.into()))
+          .await?
+          .map_err(|e| SubError::BrokerError(e.into()))
+          .and_then(async |msg| {
+            let (msg, acker) = msg.split();
+            Ok((
+              msg.payload.clone(),
+              Arc::new(acker) as Arc<dyn AckTrait + Send + Sync>,
+            ))
+          });
         Ok(messages.boxed())
       }
     }

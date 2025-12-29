@@ -168,7 +168,7 @@ use ::futures::stream::BoxStream;
 use ::serde::{Serialize, de::DeserializeOwned};
 
 use crate::r#enum::Format;
-use crate::error::{AckError, PubError, SubError, UnSubError};
+use crate::errors::{AckError, PubError, SubError, UnSubError};
 
 #[cfg(test)]
 use crate::tests::entity::TestEntity;

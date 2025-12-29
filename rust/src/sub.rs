@@ -7,7 +7,7 @@ use futures::stream::BoxStream;
 use serde::de::DeserializeOwned;
 
 use crate::r#enum::Format;
-use crate::error::{SubError, UnSubError};
+use crate::errors::{SubError, UnSubError};
 use crate::traits::{
   AckTrait, SubCtxTrait, SubOptTrait, SubTrait, UnSubTrait,
 };
@@ -151,7 +151,7 @@ mod test {
   use ::rmp_serde::to_vec as to_msgpack;
   use ::serde_json::to_vec as jsonify;
 
-  use crate::error::AckError;
+  use crate::errors::AckError;
   use crate::tests::{entity::TestEntity, subscribe::SubscribeMock};
   use crate::traits::{MockAckTrait, MockSubOptTrait};
 

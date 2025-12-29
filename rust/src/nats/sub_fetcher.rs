@@ -3,12 +3,12 @@ use ::std::sync::Arc;
 use ::async_nats::jetstream::{context::Context, stream::Stream as JStream};
 use ::async_trait::async_trait;
 use ::bytes::Bytes;
-use ::futures::StreamExt;
 use ::futures::stream::BoxStream;
+use ::futures::{StreamExt, TryFutureExt};
 
 use super::errors::NatsSubFetcherError;
 use super::options::AckSubOptions;
-use crate::error::{SubError, UnSubError};
+use crate::errors::{SubError, UnSubError};
 use crate::traits::{AckTrait, SubCtxTrait, UnSubTrait};
 
 /// Fetches pull-based JetStream messages using the configured stream options.
@@ -49,6 +49,7 @@ impl SubCtxTrait for SubFetcher {
         &self.options.stream_cfg.name,
         self.options.pull_cfg.clone(),
       )
+      .map_err(|e| SubError::BrokerError(e.into()))
       .await?;
     let messages = async_stream::try_stream! {
       let mut msgs = consumer.subscribe().await?;
@@ -64,10 +65,13 @@ impl SubCtxTrait for SubFetcher {
 impl UnSubTrait for SubFetcher {
   /// Deletes the durable consumer associated with this fetcher.
   async fn unsubscribe(&self) -> Result<(), UnSubError> {
-    self
-      .stream
-      .delete_consumer(&self.options.pull_cfg.durable_name.clone().unwrap())
-      .await?;
+    if let Some(durable_name) = &self.options.pull_cfg.durable_name {
+      self
+        .stream
+        .delete_consumer(durable_name)
+        .map_err(|e| UnSubError::BrokerError(e.into()))
+        .await?;
+    }
     Ok(())
   }
 }
