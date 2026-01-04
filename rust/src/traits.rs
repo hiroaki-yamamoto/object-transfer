@@ -245,3 +245,44 @@ pub trait SubOptTrait {
   fn get_auto_ack(&self) -> bool;
   fn get_format(&self) -> Format;
 }
+
+#[cfg(test)]
+mod test {
+  use ::static_assertions::assert_obj_safe;
+
+  use super::*;
+  #[test]
+  fn test_pub_safety() {
+    assert_obj_safe!(PubTrait<Item = TestEntity>);
+  }
+
+  #[test]
+  fn test_ack_safety() {
+    assert_obj_safe!(AckTrait);
+  }
+
+  #[test]
+  fn test_sub_safety() {
+    assert_obj_safe!(SubTrait<Item = TestEntity>);
+  }
+
+  #[test]
+  fn test_unsub_safety() {
+    assert_obj_safe!(UnSubTrait);
+  }
+
+  #[test]
+  fn test_pubctx_safety() {
+    assert_obj_safe!(PubCtxTrait);
+  }
+
+  #[test]
+  fn test_subctx_safety() {
+    assert_obj_safe!(SubCtxTrait);
+  }
+
+  #[test]
+  fn test_subopt_safety() {
+    assert_obj_safe!(SubOptTrait);
+  }
+}

@@ -27,3 +27,4 @@ async-stream = "0.3.6"
 [dev-dependencies]
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 mockall = "0.14.0"
+static_assertions = "1.1.0"
