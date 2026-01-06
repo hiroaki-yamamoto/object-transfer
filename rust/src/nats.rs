@@ -8,6 +8,8 @@ pub mod impl_ack;
 pub mod impl_ctx;
 pub mod options;
 mod sub_fetcher;
+#[cfg(test)]
+mod tests;
 
 pub use errors::NatsSubFetcherError;
 pub use options::AckSubOptions;
