@@ -94,13 +94,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
   );
 
   // Initialize subscriber with fetcher for retrieving messages
-  let fetcher = Arc::new(SubFetcher::new(js, options.clone()).await?);
+  let fetcher = Arc::new(SubFetcher::new(js.clone(), options.clone()).await?);
   let unsub = Some(fetcher.clone() as Arc<dyn UnSubTrait + Send + Sync>);
   let subscriber: Sub<MyData> = Sub::new(fetcher, unsub, options);
 
   // Initialize publisher for sending messages to a specific subject
   let publisher: Pub<MyData> = Pub::new(
-    Arc::new(js),
+    js.clone(),
     "mydata.created",
     Format::JSON,
   );
