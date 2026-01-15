@@ -12,9 +12,13 @@ repository = "https://github.com/hiroaki-yamamoto/object-transfer"
 categories = ["network-programming", "asynchronous", "web-programming"]
 keywords = ["serialization", "deserialization", "nats"]
 
+[features]
+nats = ["dep:async-nats"]
+default = ["nats"]
+
 
 [dependencies]
-async-nats = "0.45"
+async-nats = { version = "0.45", optional = true }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 rmp-serde = "1.1"

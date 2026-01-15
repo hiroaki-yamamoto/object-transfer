@@ -19,6 +19,7 @@
 mod ack_noop;
 pub mod r#enum;
 pub mod errors;
+#[cfg(feature = "nats")]
 pub mod nats;
 mod r#pub;
 mod sub;
