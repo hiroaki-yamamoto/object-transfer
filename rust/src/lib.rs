@@ -22,6 +22,8 @@ pub mod errors;
 #[cfg(feature = "nats")]
 pub mod nats;
 mod r#pub;
+#[cfg(feature = "redis")]
+pub mod redis;
 mod sub;
 pub mod traits;
 
