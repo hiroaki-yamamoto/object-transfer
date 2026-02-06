@@ -2,10 +2,10 @@
 ///
 /// This struct holds the configuration settings needed to initialize and manage
 /// a Redis publisher instance, including the consumer group name for Redis streams.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct PublisherConfig {
-  pub(super) group_name: Option<String>,
-  pub(super) stream_length: usize,
+  pub(in super::super) group_name: Option<String>,
+  pub(in super::super) stream_length: usize,
 }
 
 const MAX_STREAM_LENGTH_DEFAULT: usize = 500_000;

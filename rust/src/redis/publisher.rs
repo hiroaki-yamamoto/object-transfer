@@ -16,6 +16,7 @@ use super::errors::PublishError;
 /// The `Publisher` struct provides functionality to publish messages to Redis streams
 /// with support for consumer groups and stream size management. It implements the
 /// `PubCtxTrait` to provide a consistent interface for publishing operations.
+#[derive(Clone)]
 pub struct Publisher {
   /// The multiplexed Redis connection used for publishing messages.
   con: MultiplexedConnection,

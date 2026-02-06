@@ -1,7 +1,10 @@
+mod ack;
+mod config;
 mod errors;
 mod publisher;
-mod publisher_config;
+mod subscriber;
 
+pub use self::config::{PublisherConfig, SubscriberConfig};
 pub use self::errors::PublishError;
 pub use self::publisher::Publisher;
-pub use self::publisher_config::PublisherConfig;
+pub use self::subscriber::Subscriber;
