@@ -20,3 +20,21 @@ impl From<PublishError> for BrokerError {
     BrokerError::new(err)
   }
 }
+
+/// Errors that can occur during Redis subscribe operations.
+#[derive(Error, Debug)]
+#[error("Redis subscribe error: {0}")]
+pub enum SubscribeError {
+  /// Error that occurs when creating a consumer group in Redis fails.
+  #[error("Group Creation Error: {0}")]
+  GroupCreation(RedisError),
+  /// Error that occurs when reading messages from a Redis stream fails.
+  #[error("Message Reading Error: {0}")]
+  Read(RedisError),
+}
+
+impl From<SubscribeError> for BrokerError {
+  fn from(err: SubscribeError) -> Self {
+    BrokerError::new(err)
+  }
+}

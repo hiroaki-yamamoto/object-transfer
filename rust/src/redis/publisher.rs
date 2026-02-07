@@ -58,7 +58,7 @@ impl PubCtxTrait for Publisher {
       .clone();
     let mut con = self.con.clone();
     con
-      .xgroup_create(topic, group_name, "$ MKSTREAM")
+      .xgroup_create_mkstream(topic, group_name, "$")
       .map_err(|err| BrokerError::from(PublishError::GroupCreation(err)))
       .await?;
     con

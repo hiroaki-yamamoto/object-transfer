@@ -14,7 +14,7 @@ keywords = ["serialization", "deserialization", "nats", "redis", "pubsub"]
 
 [features]
 nats = ["dep:async-nats"]
-redis = ["dep:redis", "redis?/aio", "redis?/tokio-comp"]
+redis = ["dep:redis", "redis?/aio", "redis?/tokio-comp", "redis?/streams"]
 default = ["nats", "redis"]
 
 
