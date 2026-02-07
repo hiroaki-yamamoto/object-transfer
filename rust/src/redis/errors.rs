@@ -38,3 +38,13 @@ impl From<SubscribeError> for BrokerError {
     BrokerError::new(err)
   }
 }
+
+#[derive(Error, Debug)]
+#[error("Redis acknowledgment error: {0}")]
+pub struct AckError(pub RedisError);
+
+impl From<AckError> for BrokerError {
+  fn from(err: AckError) -> Self {
+    BrokerError::new(err)
+  }
+}
