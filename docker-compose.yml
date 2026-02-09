@@ -2,5 +2,9 @@ services:
   nats:
     image: nats:scratch
     ports:
-      - '4222:4222'
-    command: ['-js']
+      - "4222:4222"
+    command: ["-js"]
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
