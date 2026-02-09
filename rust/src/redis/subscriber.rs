@@ -19,6 +19,10 @@ use super::ack::Ack;
 use super::config::SubscriberConfig;
 use super::errors::SubscribeError;
 
+/// A Redis-based message subscriber that handles subscription to Redis streams.
+///
+/// This struct manages subscription to Redis stream topics using consumer groups,
+/// allowing for acknowledgment of processed messages and reliable message delivery.
 #[derive(Clone)]
 pub struct Subscriber {
   con: MultiplexedConnection,
@@ -26,6 +30,16 @@ pub struct Subscriber {
 }
 
 impl Subscriber {
+  /// Creates a new subscriber instance.
+  ///
+  /// # Arguments
+  ///
+  /// * `con` - A reference to a multiplexed Redis connection
+  /// * `cfg` - The subscriber configuration containing topic, group, and consumer names
+  ///
+  /// # Returns
+  ///
+  /// A new `Subscriber` instance configured with the provided connection and settings.
   pub fn new(con: &MultiplexedConnection, cfg: SubscriberConfig) -> Self {
     Self {
       con: con.clone(),
@@ -36,6 +50,22 @@ impl Subscriber {
 
 #[async_trait]
 impl SubCtxTrait for Subscriber {
+  /// Subscribes to a Redis stream and returns a stream of messages.
+  ///
+  /// Creates a consumer group if it doesn't exist, then continuously reads messages
+  /// from the configured Redis stream. Each message is wrapped with an acknowledgment handler.
+  ///
+  /// # Returns
+  ///
+  /// A `Result` containing:
+  /// - `Ok`: A boxed stream yielding tuples of (message bytes, acknowledgment handler)
+  /// - `Err`: A `SubError` if subscription fails
+  ///
+  /// # Errors
+  ///
+  /// Returns an error if:
+  /// - Consumer group creation fails
+  /// - Stream reading operation fails
   async fn subscribe(
     &self,
   ) -> Result<
