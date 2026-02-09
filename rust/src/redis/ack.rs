@@ -42,15 +42,15 @@ impl Ack {
   /// A new `Ack` instance configured with the provided parameters.
   pub(super) fn new(
     con: &MultiplexedConnection,
-    group: String,
-    stream_name: String,
-    id: String,
+    group: impl Into<String>,
+    stream_name: impl Into<String>,
+    id: impl Into<String>,
   ) -> Self {
     Self {
       con: con.clone(),
-      group,
-      stream_name,
-      id,
+      group: group.into(),
+      stream_name: stream_name.into(),
+      id: id.into(),
     }
   }
 }

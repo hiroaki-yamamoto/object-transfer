@@ -15,6 +15,7 @@ use ::redis::streams::{
 use crate::errors::{BrokerError, SubError};
 use crate::traits::{AckTrait, SubCtxTrait};
 
+use super::ack::Ack;
 use super::config::SubscriberConfig;
 use super::errors::SubscribeError;
 
@@ -42,32 +43,31 @@ impl SubCtxTrait for Subscriber {
     SubError,
   > {
     let cfg = self.cfg.clone();
-    self
-      .con
-      .xgroup_create_mkstream(cfg.topic_name, cfg.group_name, "$")
+    let mut con = self.con.clone();
+    con
+      .xgroup_create_mkstream::<_, _, _, ()>(
+        &cfg.topic_name,
+        &cfg.group_name,
+        "$",
+      )
       .map_err(|err| BrokerError::from(SubscribeError::GroupCreation(err)))
       .await?;
     let opts = StreamReadOptions::default()
-      .group(cfg.group_name, cfg.consumer_name)
+      .group(&cfg.group_name, &cfg.consumer_name)
       .count(cfg.num_fetch)
       .block(cfg.block_time);
     let stream = try_stream! {
         loop {
-          let reply: StreamReadReply = self.con.xread_options(
-            &[cfg.topic_name], &[">"], &opts
+          let reply: StreamReadReply = con.xread_options(
+            &[&cfg.topic_name], &[">"], &opts
           ).map_err(|err| BrokerError::from(SubscribeError::Read(err))).await?;
           for StreamKey { key, ids } in reply.keys {
+            let _ = key;
             for StreamId {id, map, ..} in ids {
-              for (field, value) in map {
+              for (_, value) in map {
                 if let Value::BulkString(data) = value {
                   let payload = Bytes::from(data);
-                  let ack = Arc::new(super::ack::RedisAck {
-                    con: self.con.clone(),
-                    topic: key.clone(),
-                    group: cfg.group_name.clone(),
-                    consumer: cfg.consumer_name.clone(),
-                    id: id.clone(),
-                  });
+                  let ack = Arc::new(Ack::new(&self.con, &cfg.group_name, &cfg.topic_name, &id));
                   yield (payload, ack as Arc<dyn AckTrait + Send + Sync>);
                 } else {
                   continue;
