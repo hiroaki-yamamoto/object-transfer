@@ -700,6 +700,7 @@ dependencies = [
  "mockall",
  "redis",
  "rmp-serde",
+ "semver",
  "serde",
  "serde_json",
  "static_assertions",

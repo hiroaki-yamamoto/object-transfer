@@ -12,12 +12,12 @@ use ::redis::streams::{
   StreamId, StreamKey, StreamReadOptions, StreamReadReply,
 };
 
-use crate::errors::{BrokerError, SubError};
-use crate::traits::{AckTrait, SubCtxTrait};
+use crate::errors::{BrokerError, SubError, UnSubError};
+use crate::traits::{AckTrait, SubCtxTrait, UnSubTrait};
 
 use super::ack::Ack;
 use super::config::SubscriberConfig;
-use super::errors::SubscribeError;
+use super::errors::{SubscribeError, UnsubscribeError};
 
 /// A Redis-based message subscriber that handles subscription to Redis streams.
 ///
@@ -72,20 +72,20 @@ impl SubCtxTrait for Subscriber {
     BoxStream<Result<(Bytes, Arc<dyn AckTrait + Send + Sync>), SubError>>,
     SubError,
   > {
-    let cfg = self.cfg.clone();
     let mut con = self.con.clone();
+    let cfg = &self.cfg;
     con
       .xgroup_create_mkstream::<_, _, _, ()>(
-        &cfg.topic_name,
-        &cfg.group_name,
+        &self.cfg.topic_name,
+        &self.cfg.group_name,
         "$",
       )
       .map_err(|err| BrokerError::from(SubscribeError::GroupCreation(err)))
       .await?;
     let opts = StreamReadOptions::default()
       .group(&cfg.group_name, &cfg.consumer_name)
-      .count(cfg.num_fetch)
-      .block(cfg.block_time);
+      .count(cfg.num_fetch.clone())
+      .block(cfg.block_time.clone());
     let stream = try_stream! {
         loop {
           let reply: StreamReadReply = con.xread_options(
@@ -97,7 +97,9 @@ impl SubCtxTrait for Subscriber {
               for (_, value) in map {
                 if let Value::BulkString(data) = value {
                   let payload = Bytes::from(data);
-                  let ack = Arc::new(Ack::new(&self.con, &cfg.group_name, &cfg.topic_name, &id));
+                  let ack = Arc::new(
+                    Ack::new(&self.con, &cfg.group_name, &cfg.topic_name, &id)
+                  );
                   yield (payload, ack as Arc<dyn AckTrait + Send + Sync>);
                 } else {
                   continue;
@@ -108,5 +110,29 @@ impl SubCtxTrait for Subscriber {
       }
     };
     return Ok(Box::pin(stream));
+  }
+}
+
+#[async_trait]
+impl UnSubTrait for Subscriber {
+  /// Unsubscribes from the Redis stream.
+  ///
+  /// This implementation is a no-op since Redis streams do not require explicit unsubscription.
+  ///
+  /// # Returns
+  ///
+  /// A `Result` indicating success or failure of the unsubscription operation.
+  async fn unsubscribe(&self) -> Result<(), UnSubError> {
+    let mut con = self.con.clone();
+    let cfg = &self.cfg;
+    let _: i32 = con
+      .xgroup_delconsumer::<_, _, _, _>(
+        &cfg.topic_name,
+        &cfg.group_name,
+        &cfg.consumer_name,
+      )
+      .map_err(|err| BrokerError::from(UnsubscribeError(err)))
+      .await?;
+    Ok(())
   }
 }

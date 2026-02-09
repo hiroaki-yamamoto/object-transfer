@@ -48,3 +48,13 @@ impl From<AckError> for BrokerError {
     BrokerError::new(err)
   }
 }
+
+#[derive(Error, Debug)]
+#[error("Redis unsubscription error: {0}")]
+pub struct UnsubscribeError(pub RedisError);
+
+impl From<UnsubscribeError> for BrokerError {
+  fn from(err: UnsubscribeError) -> Self {
+    BrokerError::new(err)
+  }
+}

@@ -138,9 +138,9 @@ where
   /// Invokes the optional unsubscribe handler, if present.
   async fn unsubscribe(&self) -> Result<(), UnSubError> {
     if let Some(unsub) = &self.unsub {
-      unsub.unsubscribe().await?;
+      return unsub.unsubscribe().await;
     }
-    return Ok(());
+    return Err(UnSubError::NoHandler);
   }
 }
 

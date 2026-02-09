@@ -26,6 +26,7 @@ mod r#pub;
 pub mod redis;
 mod sub;
 pub mod traits;
+mod unsub_noop;
 
 #[cfg(test)]
 mod tests;
@@ -35,3 +36,4 @@ pub use r#enum::Format;
 pub use r#pub::Pub;
 pub use sub::Sub;
 pub use traits::{PubTrait, SubOptTrait, SubTrait, UnSubTrait};
+pub use unsub_noop::UnSubNoop;

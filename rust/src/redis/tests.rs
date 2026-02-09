@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::redis::{Publisher, PublisherConfig, Subscriber, SubscriberConfig};
 use crate::traits::SubOptTrait;
-use crate::{Format, Pub, PubTrait, Sub, SubTrait};
+use crate::{Format, Pub, PubTrait, Sub, SubTrait, UnSubTrait};
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 struct MyObj {
@@ -47,21 +47,22 @@ async fn setup(format: Format) -> Option<(Pub<MyObj>, Sub<MyObj>)> {
 
   let publisher =
     Publisher::new(&con, PublisherConfig::new().group_name(publisher_group));
-  let subscriber = Subscriber::new(
+  let subscriber = Arc::new(Subscriber::new(
     &con,
     SubscriberConfig::new(stream_name.clone())
       .group_name(subscriber_group)
       .consumer_name(subscriber_consumer)
       .num_fetch(1)
       .block_time(500),
-  );
+  ));
 
   let options = Arc::new(TestSubOptions {
     format,
     auto_ack: true,
   });
   let pub_typed = Pub::new(Arc::new(publisher), stream_name, format);
-  let sub_typed = Sub::new(Arc::new(subscriber), None, options);
+  let sub_typed =
+    Sub::new(subscriber.clone(), Some(subscriber.clone()), options);
   Some((pub_typed, sub_typed))
 }
 
@@ -73,6 +74,7 @@ async fn roundtrip(format: Format) {
     let sub = ::tokio::spawn(async move {
       let mut subscriber = reader.subscribe().await.unwrap();
       let (obj, _) = subscriber.next().await.unwrap().unwrap();
+      reader.unsubscribe().await.unwrap();
       obj
     });
     publisher.publish(&obj).await.unwrap();
