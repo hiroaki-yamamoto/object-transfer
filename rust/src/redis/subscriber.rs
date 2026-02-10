@@ -55,19 +55,13 @@ impl Subscriber {
     let mut results = Vec::new();
     let cfg = &self.cfg;
     for StreamId { id, map, .. } in stream_ids {
-      for (_, value) in map {
-        if let Value::BulkString(data) = value {
-          let payload = Bytes::from(data);
-          let ack = Arc::new(Ack::new(
-            &self.con,
-            &cfg.group_name,
-            &cfg.topic_name,
-            &id,
-          ));
-          results.push((payload, ack as Arc<dyn AckTrait + Send + Sync>));
-        } else {
-          continue;
-        }
+      if let Some(Value::BulkString(data)) = map.get("data") {
+        let payload = Bytes::from(data.clone());
+        let ack =
+          Arc::new(Ack::new(&self.con, &cfg.group_name, &cfg.topic_name, &id));
+        results.push((payload, ack as Arc<dyn AckTrait + Send + Sync>));
+      } else {
+        continue;
       }
     }
     results
@@ -152,14 +146,11 @@ impl SubCtxTrait for Subscriber {
               })
               .await
           };
-          let (auto_claimed_ids, read_ids) = futures::join!(autoclaim, stream_reply);
+          let run_result = futures::try_join!(autoclaim, stream_reply);
           let mut all_ids = Vec::new();
-          if let Ok(mut ids) = auto_claimed_ids {
-            all_ids.append(&mut ids);
-          }
-          if let Ok(mut ids) = read_ids {
-            all_ids.append(&mut ids);
-          }
+          let (mut auto, mut read) = run_result?;
+          all_ids.append(&mut auto);
+          all_ids.append(&mut read);
           let values = self.handle_stream_ids(all_ids);
           for value in values {
             yield value;
@@ -172,13 +163,18 @@ impl SubCtxTrait for Subscriber {
 
 #[async_trait]
 impl UnSubTrait for Subscriber {
-  /// Unsubscribes from the Redis stream.
+  /// Unsubscribes this consumer from the Redis stream consumer group.
   ///
-  /// This implementation is a no-op since Redis streams do not require explicit unsubscription.
+  /// This implementation issues an `XGROUP DELCONSUMER` command to remove the
+  /// configured consumer from the consumer group on the configured stream.
+  /// While Redis streams do not require an explicit "unsubscribe" to stop
+  /// receiving messages, this cleanup helps remove the consumer's pending
+  /// entries from the group and free related server-side state.
   ///
   /// # Returns
   ///
-  /// A `Result` indicating success or failure of the unsubscription operation.
+  /// A `Result` indicating success or failure of the unsubscription (consumer
+  /// cleanup) operation. Underlying Redis errors are wrapped in `UnSubError`.
   async fn unsubscribe(&self) -> Result<(), UnSubError> {
     let mut con = self.con.clone();
     let cfg = &self.cfg;

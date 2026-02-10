@@ -12,8 +12,11 @@ use crate::traits::UnSubTrait;
 /// A no-operation unsubscribe handler.
 ///
 /// `UnSubNoop` is a simple implementation of [`UnSubTrait`](crate::traits::UnSubTrait)
-/// that performs no operations when unsubscribe is called. It always returns `Ok(())`
-/// without taking any action.
+/// that performs no operations when unsubscribe is called.
+///
+/// Depending on how it is configured, `unsubscribe` will either:
+/// - Return `Ok(())` without taking any action when `should_err` is `false`
+/// - Return `Err(UnSubError::NoHandler)` when `should_err` is `true`
 ///
 /// This is useful for:
 /// - Default implementations where unsubscribe is not required
