@@ -18,8 +18,8 @@ impl PublisherConfig {
   /// A new `PublisherConfig` instance with the specified group name.
   ///
   /// # Default values
-  /// - `group_name`: `None`, the same name of the name of stream.
-  /// - `stream_length`: `500,000` messages
+  /// - `group_name`: `None`, which defaults to the stream name.
+  /// - `stream_length`: up to 500,000 messages.
   pub fn new() -> Self {
     Self {
       group_name: None,
