@@ -135,7 +135,7 @@ impl<T> UnSubTrait for Sub<T>
 where
   T: DeserializeOwned + Send + Sync,
 {
-  /// Invokes the optional unsubscribe handler, if present.
+  /// Invokes the configured unsubscribe handler.
   async fn unsubscribe(&self) -> Result<(), UnSubError> {
     self.unsub.unsubscribe().await
   }

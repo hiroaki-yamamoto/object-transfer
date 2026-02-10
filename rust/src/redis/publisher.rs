@@ -50,12 +50,7 @@ impl PubCtxTrait for Publisher {
     topic: &str,
     payload: Bytes,
   ) -> Result<(), PubError> {
-    let group_name = self
-      .cfg
-      .group_name
-      .as_ref()
-      .unwrap_or(&topic.to_string())
-      .clone();
+    let group_name = self.cfg.group_name.clone().unwrap_or(topic.to_string());
     let mut con = self.con.clone();
     if let Err(err) = con.xgroup_create_mkstream(topic, group_name, "$").await
     {
