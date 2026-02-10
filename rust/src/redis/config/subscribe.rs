@@ -5,7 +5,8 @@
 /// - `group_name`: same as `topic_name`
 /// - `topic_name`: as provided
 /// - `num_fetch`: 10
-/// - `block_time`: 5000 ms
+/// - `block_time`: 5000 ms (5 seconds)
+/// - `auto_claim`: 30000 ms (min-idle-time for xauto-claim)
 #[derive(Clone, Debug)]
 pub struct SubscriberConfig {
   pub(in super::super) consumer_name: String,
@@ -13,7 +14,7 @@ pub struct SubscriberConfig {
   pub(in super::super) topic_name: String,
   pub(in super::super) num_fetch: usize,
   pub(in super::super) block_time: usize,
-  pub(in super::super) auto_claim: bool,
+  pub(in super::super) auto_claim: usize,
 }
 
 impl SubscriberConfig {
@@ -28,9 +29,9 @@ impl SubscriberConfig {
       consumer_name: topic_name.clone(),
       group_name: topic_name.clone(),
       topic_name: topic_name,
-      num_fetch: 10,    // Default number to fetch
-      block_time: 5000, // Default block time in milliseconds (5 seconds)
-      auto_claim: true, // Default to auto-claim pending messages
+      num_fetch: 10,     // Default number to fetch
+      block_time: 5000,  // Default block time in milliseconds (5 seconds)
+      auto_claim: 30000, // min-idle-time for xauto-claim in milliseconds (30 seconds)
     };
   }
 
@@ -64,9 +65,10 @@ impl SubscriberConfig {
     self
   }
 
-  /// Sets whether the session to send auto-claim for pending messages.
-  pub fn auto_claim(mut self, auto_claim: bool) -> Self {
-    self.auto_claim = auto_claim;
+  /// Sets the minimum idle time in milliseconds for auto-claiming pending messages.
+  /// If the value is 0, auto-claiming is disabled.
+  pub fn auto_claim(mut self, millis: usize) -> Self {
+    self.auto_claim = millis;
     self
   }
 }
