@@ -13,6 +13,7 @@ pub struct SubscriberConfig {
   pub(in super::super) topic_name: String,
   pub(in super::super) num_fetch: usize,
   pub(in super::super) block_time: usize,
+  pub(in super::super) auto_claim: bool,
 }
 
 impl SubscriberConfig {
@@ -29,6 +30,7 @@ impl SubscriberConfig {
       topic_name: topic_name,
       num_fetch: 10,    // Default number to fetch
       block_time: 5000, // Default block time in milliseconds (5 seconds)
+      auto_claim: true, // Default to auto-claim pending messages
     };
   }
 
@@ -59,6 +61,12 @@ impl SubscriberConfig {
   /// Sets the blocking time in milliseconds for each read.
   pub fn block_time(mut self, millis: usize) -> Self {
     self.block_time = millis;
+    self
+  }
+
+  /// Sets whether the session to send auto-claim for pending messages.
+  pub fn auto_claim(mut self, auto_claim: bool) -> Self {
+    self.auto_claim = auto_claim;
     self
   }
 }
