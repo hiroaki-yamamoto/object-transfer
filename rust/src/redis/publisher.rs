@@ -57,10 +57,15 @@ impl PubCtxTrait for Publisher {
       .unwrap_or(&topic.to_string())
       .clone();
     let mut con = self.con.clone();
-    con
-      .xgroup_create_mkstream(topic, group_name, "$")
-      .map_err(|err| BrokerError::from(PublishError::GroupCreation(err)))
-      .await?;
+    if let Err(err) = con.xgroup_create_mkstream(topic, group_name, "$").await
+    {
+      // Ignore "BUSYGROUP" errors (group already exists) to make subscription idempotent.
+      if err.code() != Some("BUSYGROUP") {
+        return Err(
+          BrokerError::from(PublishError::GroupCreation(err)).into(),
+        );
+      }
+    }
     con
       .xadd_maxlen(
         topic,

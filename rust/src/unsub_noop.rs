@@ -19,18 +19,32 @@ use crate::traits::UnSubTrait;
 /// - Default implementations where unsubscribe is not required
 /// - Testing and mocking scenarios
 /// - Cases where subscription cleanup is not necessary
-pub struct UnSubNoop;
+pub struct UnSubNoop {
+  should_err: bool,
+}
+
+impl UnSubNoop {
+  /// Creates a new instance of `UnSubNoop`.
+  pub fn new(should_err: bool) -> Self {
+    UnSubNoop { should_err }
+  }
+}
 
 #[async_trait]
 impl UnSubTrait for UnSubNoop {
   /// Performs a no-operation unsubscribe.
   ///
-  /// This method always completes successfully without performing any work.
+  /// Returns `Err(UnSubError::NoHandler)` if `should_err` is `true`,
+  /// otherwise returns `Ok(())`.
   ///
   /// # Returns
   ///
-  /// Always returns `Ok(())`.
+  /// Returns `Err(UnSubError::NoHandler)` if `should_err` is `true`,
+  /// otherwise returns `Ok(())`.
   async fn unsubscribe(&self) -> Result<(), UnSubError> {
+    if self.should_err {
+      return Err(UnSubError::NoHandler);
+    }
     Ok(())
   }
 }

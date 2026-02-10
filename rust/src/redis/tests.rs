@@ -61,8 +61,7 @@ async fn setup(format: Format) -> Option<(Pub<MyObj>, Sub<MyObj>)> {
     auto_ack: true,
   });
   let pub_typed = Pub::new(Arc::new(publisher), stream_name, format);
-  let sub_typed =
-    Sub::new(subscriber.clone(), Some(subscriber.clone()), options);
+  let sub_typed = Sub::new(subscriber.clone(), subscriber.clone(), options);
   Some((pub_typed, sub_typed))
 }
 
@@ -73,7 +72,8 @@ async fn roundtrip(format: Format) {
     };
     let sub = ::tokio::spawn(async move {
       let mut subscriber = reader.subscribe().await.unwrap();
-      let (obj, _) = subscriber.next().await.unwrap().unwrap();
+      let (obj, ack) = subscriber.next().await.unwrap().unwrap();
+      ack.ack().await.unwrap();
       reader.unsubscribe().await.unwrap();
       obj
     });
