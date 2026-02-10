@@ -31,7 +31,7 @@ where
     BoxStream<Result<(Self::Item, Arc<dyn AckTrait + Send + Sync>), SubError>>,
     SubError,
   > {
-    return Ok(iter(self.data.clone()).map(|item| Ok(item)).boxed());
+    Ok(iter(self.data.clone()).map(|item| Ok(item)).boxed())
   }
 }
 
@@ -43,6 +43,6 @@ impl SubCtxTrait for SubscribeMock<Bytes> {
     BoxStream<Result<(Bytes, Arc<dyn AckTrait + Send + Sync>), SubError>>,
     SubError,
   > {
-    return Ok(iter(self.data.clone()).map(|item| Ok(item)).boxed());
+    Ok(iter(self.data.clone()).map(|item| Ok(item)).boxed())
   }
 }

@@ -122,7 +122,7 @@ impl SubCtxTrait for Subscriber {
           }
       }
     };
-    return Ok(Box::pin(stream));
+    Ok(Box::pin(stream))
   }
 }
 

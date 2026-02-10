@@ -21,10 +21,10 @@ impl PublisherConfig {
   /// - `group_name`: `None`, the same name of the name of stream.
   /// - `stream_length`: `500,000` messages
   pub fn new() -> Self {
-    return Self {
+    Self {
       group_name: None,
       stream_length: MAX_STREAM_LENGTH_DEFAULT,
-    };
+    }
   }
 
   /// Sets the Redis stream consumer group name used by the publisher.

@@ -19,10 +19,10 @@ pub enum Format {
 #[cfg(test)]
 impl ToString for Format {
   fn to_string(&self) -> String {
-    return match self {
+    match self {
       Format::MessagePack => "MessagePack",
       Format::JSON => "JSON",
     }
-    .to_string();
+    .to_string()
   }
 }

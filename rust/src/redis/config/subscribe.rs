@@ -25,14 +25,14 @@ impl SubscriberConfig {
   ///
   pub fn new(topic_name: impl Into<String>) -> Self {
     let topic_name = topic_name.into();
-    return Self {
+    Self {
       consumer_name: topic_name.clone(),
       group_name: topic_name.clone(),
       topic_name: topic_name,
       num_fetch: 10,     // Default number to fetch
       block_time: 5000,  // Default block time in milliseconds (5 seconds)
       auto_claim: 30000, // min-idle-time for xauto-claim in milliseconds (30 seconds)
-    };
+    }
   }
 
   /// Sets the consumer name.

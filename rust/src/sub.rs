@@ -126,7 +126,7 @@ where
       }?;
       Ok((data, acker))
     });
-    return Ok(Box::pin(stream));
+    Ok(Box::pin(stream))
   }
 }
 
@@ -140,7 +140,7 @@ where
     if let Some(unsub) = &self.unsub {
       return unsub.unsubscribe().await;
     }
-    return Err(UnSubError::NoHandler);
+    Err(UnSubError::NoHandler)
   }
 }
 
