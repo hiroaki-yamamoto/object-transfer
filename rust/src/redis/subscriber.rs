@@ -1,16 +1,16 @@
 use ::std::sync::Arc;
 
-use ::async_stream::{stream, try_stream};
+use ::async_stream::try_stream;
 use ::async_trait::async_trait;
 use ::bytes::Bytes;
+use ::futures::TryFutureExt;
 use ::futures::stream::BoxStream;
-use ::futures::{StreamExt, TryFutureExt};
 use ::redis::AsyncCommands;
 use ::redis::Value;
 use ::redis::aio::MultiplexedConnection;
 use ::redis::streams::{
-  StreamAutoClaimOptions, StreamAutoClaimReply, StreamId, StreamKey,
-  StreamReadOptions, StreamReadReply,
+  StreamAutoClaimOptions, StreamAutoClaimReply, StreamId, StreamReadOptions,
+  StreamReadReply,
 };
 
 use crate::errors::{BrokerError, SubError, UnSubError};
@@ -19,12 +19,6 @@ use crate::traits::{AckTrait, SubCtxTrait, UnSubTrait};
 use super::ack::Ack;
 use super::config::SubscriberConfig;
 use super::errors::{SubscribeError, UnsubscribeError};
-
-enum ReplyType {
-  Read(StreamReadReply),
-  AutoClaim(StreamAutoClaimReply),
-  None,
-}
 
 /// A Redis-based message subscriber that handles subscription to Redis streams.
 ///
