@@ -9,7 +9,8 @@ use ::redis::AsyncCommands;
 use ::redis::Value;
 use ::redis::aio::MultiplexedConnection;
 use ::redis::streams::{
-  StreamId, StreamKey, StreamReadOptions, StreamReadReply,
+  StreamAutoClaimOptions, StreamId, StreamKey, StreamReadOptions,
+  StreamReadReply,
 };
 
 use crate::errors::{BrokerError, SubError, UnSubError};
@@ -88,6 +89,18 @@ impl SubCtxTrait for Subscriber {
       .block(cfg.block_time.clone());
     let stream = try_stream! {
         loop {
+          if cfg.auto_claim > 0 {
+            con.xautoclaim_options::<_, _, _, _, _, ()>(
+              &cfg.topic_name,
+              &cfg.group_name,
+              &cfg.consumer_name,
+              &cfg.auto_claim,
+              "0-0",
+              StreamAutoClaimOptions::default().count(cfg.num_fetch.clone()),
+            ).map_err(
+              |err| BrokerError::from(SubscribeError::AutoClaim(err))
+            ).await?;
+          }
           let reply: StreamReadReply = con.xread_options(
             &[&cfg.topic_name], &[">"], &opts
           ).map_err(|err| BrokerError::from(SubscribeError::Read(err))).await?;

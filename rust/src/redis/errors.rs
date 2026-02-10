@@ -28,6 +28,9 @@ pub enum SubscribeError {
   /// Error that occurs when creating a consumer group in Redis fails.
   #[error("Group Creation Error: {0}")]
   GroupCreation(RedisError),
+  /// Error that occurs when auto-claiming messages in Redis fails.
+  #[error("Auto-Claim Error: {0}")]
+  AutoClaim(RedisError),
   /// Error that occurs when reading messages from a Redis stream fails.
   #[error("Message Reading Error: {0}")]
   Read(RedisError),
