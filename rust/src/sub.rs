@@ -50,7 +50,7 @@ use crate::traits::{
 ///
 ///   // SubFetcher implements both SubCtxTrait and UnSubTrait.
 ///   let fetcher = Arc::new(SubFetcher::new(js, options.clone()).await?);
-///   let unsub = Some(fetcher.clone() as Arc<dyn UnSubTrait + Send + Sync>);
+///   let unsub = fetcher.clone();
 ///
 ///   let subscriber: Sub<Event> = Sub::new(fetcher, unsub, options);
 ///   let mut stream = subscriber.subscribe().await?;
