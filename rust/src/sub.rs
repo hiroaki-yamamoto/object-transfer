@@ -50,7 +50,7 @@ use crate::traits::{
 ///
 ///   // SubFetcher implements both SubCtxTrait and UnSubTrait.
 ///   let fetcher = Arc::new(SubFetcher::new(js, options.clone()).await?);
-///   let unsub = Some(fetcher.clone() as Arc<dyn UnSubTrait + Send + Sync>);
+///   let unsub = fetcher.clone();
 ///
 ///   let subscriber: Sub<Event> = Sub::new(fetcher, unsub, options);
 ///   let mut stream = subscriber.subscribe().await?;
@@ -66,7 +66,7 @@ use crate::traits::{
 /// ```
 pub struct Sub<T> {
   ctx: Arc<dyn SubCtxTrait + Send + Sync>,
-  unsub: Option<Arc<dyn UnSubTrait + Send + Sync>>,
+  unsub: Arc<dyn UnSubTrait + Send + Sync>,
   options: Arc<dyn SubOptTrait + Send + Sync>,
   _marker: PhantomData<T>,
 }
@@ -80,11 +80,11 @@ where
   ///
   /// # Parameters
   /// - `ctx`: Message retrieval context responsible for producing raw items.
-  /// - `unsub`: Optional handler to cancel the subscription when requested.
+  /// - `unsub`: Unsubscribe handler to cancel the subscription when requested.
   /// - `options`: Subscription behavior such as auto-ack and payload format.
   pub fn new(
     ctx: Arc<dyn SubCtxTrait + Send + Sync>,
-    unsub: Option<Arc<dyn UnSubTrait + Send + Sync>>,
+    unsub: Arc<dyn UnSubTrait + Send + Sync>,
     options: Arc<dyn SubOptTrait + Send + Sync>,
   ) -> Self {
     Self {
@@ -126,7 +126,7 @@ where
       }?;
       Ok((data, acker))
     });
-    return Ok(Box::pin(stream));
+    Ok(Box::pin(stream))
   }
 }
 
@@ -135,12 +135,9 @@ impl<T> UnSubTrait for Sub<T>
 where
   T: DeserializeOwned + Send + Sync,
 {
-  /// Invokes the optional unsubscribe handler, if present.
+  /// Invokes the configured unsubscribe handler.
   async fn unsubscribe(&self) -> Result<(), UnSubError> {
-    if let Some(unsub) = &self.unsub {
-      unsub.unsubscribe().await?;
-    }
-    return Ok(());
+    self.unsub.unsubscribe().await
   }
 }
 
@@ -151,6 +148,7 @@ mod test {
   use ::rmp_serde::to_vec as to_msgpack;
   use ::serde_json::to_vec as jsonify;
 
+  use crate::UnSubNoop;
   use crate::errors::AckError;
   use crate::tests::{entity::TestEntity, subscribe::SubscribeMock};
   use crate::traits::{MockAckTrait, MockSubOptTrait};
@@ -194,7 +192,7 @@ mod test {
       .times(entities.len());
     let subscribe: Sub<TestEntity> = Sub::new(
       ctx,
-      None,
+      Arc::new(UnSubNoop::new(false)),
       Arc::new(options) as Arc<dyn SubOptTrait + Send + Sync>,
     );
     let stream = subscribe.subscribe().await.unwrap();
@@ -245,7 +243,7 @@ mod test {
     options.expect_get_format().return_const(format).never();
     let subscribe: Sub<TestEntity> = Sub::new(
       ctx,
-      None,
+      Arc::new(UnSubNoop::new(false)),
       Arc::new(options) as Arc<dyn SubOptTrait + Send + Sync>,
     );
     let stream = subscribe.subscribe().await.unwrap();

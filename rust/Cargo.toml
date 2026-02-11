@@ -10,15 +10,17 @@ license-file = "../LICENSE.md"
 homepage = "https://github.com/hiroaki-yamamoto/object-transfer"
 repository = "https://github.com/hiroaki-yamamoto/object-transfer"
 categories = ["network-programming", "asynchronous", "web-programming"]
-keywords = ["serialization", "deserialization", "nats"]
+keywords = ["serialization", "deserialization", "nats", "redis", "pubsub"]
 
 [features]
 nats = ["dep:async-nats"]
-default = ["nats"]
+redis = ["dep:redis", "redis?/aio", "redis?/tokio-comp", "redis?/streams"]
+default = ["nats", "redis"]
 
 
 [dependencies]
 async-nats = { version = "0.46", optional = true }
+redis = { version = "1.0", optional = true }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 rmp-serde = "1.1"

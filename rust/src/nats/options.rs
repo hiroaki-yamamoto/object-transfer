@@ -52,7 +52,7 @@ impl AckSubOptions {
   /// Self for method chaining
   pub fn auto_ack(mut self, auto_ack: bool) -> Self {
     self.auto_ack = auto_ack;
-    return self;
+    self
   }
 
   /// Sets the stream name.
@@ -137,9 +137,9 @@ impl AckSubOptions {
 
 impl SubOptTrait for AckSubOptions {
   fn get_auto_ack(&self) -> bool {
-    return self.auto_ack;
+    self.auto_ack
   }
   fn get_format(&self) -> Format {
-    return self.format;
+    self.format
   }
 }
