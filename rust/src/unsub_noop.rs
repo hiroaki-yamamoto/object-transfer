@@ -11,7 +11,7 @@ use crate::traits::UnSubTrait;
 
 /// A no-operation unsubscribe handler.
 ///
-/// `UnSubNoop` is a simple implementation of [`UnSubTrait`](crate::traits::UnSubTrait)
+/// `UnSubNoop` is a simple implementation of [`UnSubTrait`]
 /// that performs no operations when unsubscribe is called.
 ///
 /// Depending on how it is configured, `unsubscribe` will either:
