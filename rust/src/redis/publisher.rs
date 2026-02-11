@@ -10,6 +10,7 @@ use crate::traits::PubCtxTrait;
 
 use super::PublisherConfig;
 use super::errors::PublishError;
+use super::group_make::make_stream_group;
 
 /// A Redis-based message publisher that sends messages to Redis streams.
 ///
@@ -52,15 +53,9 @@ impl PubCtxTrait for Publisher {
   ) -> Result<(), PubError> {
     let group_name = self.cfg.group_name.clone().unwrap_or(topic.to_string());
     let mut con = self.con.clone();
-    if let Err(err) = con.xgroup_create_mkstream(topic, group_name, "$").await
-    {
-      // Ignore "BUSYGROUP" errors (group already exists) to make subscription idempotent.
-      if err.code() != Some("BUSYGROUP") {
-        return Err(
-          BrokerError::from(PublishError::GroupCreation(err)).into(),
-        );
-      }
-    }
+    make_stream_group(self.con.clone(), topic, group_name)
+      .map_err(|err| BrokerError::from(PublishError::GroupCreation(err)))
+      .await?;
     con
       .xadd_maxlen(
         topic,

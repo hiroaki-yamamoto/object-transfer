@@ -1,6 +1,7 @@
 mod ack;
 mod config;
 mod errors;
+mod group_make;
 mod publisher;
 mod subscriber;
 
