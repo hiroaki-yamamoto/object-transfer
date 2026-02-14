@@ -1,3 +1,9 @@
+//! Redis-based implementation for the object-transfer connector.
+//!
+//! This module provides Redis-backed publisher and subscriber functionality for
+//! distributed object transfer. It includes configuration management, error handling,
+//! and acknowledgment mechanisms for reliable message delivery.
+
 mod ack;
 mod config;
 mod errors;
