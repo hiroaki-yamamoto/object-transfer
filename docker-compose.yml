@@ -1,16 +1,27 @@
 services:
   nats:
-    image: nats:scratch
+    image: nats:alpine
     ports:
       - "4222:4222"
-    command: ["-js"]
+    command: ["-js", "-m", "8222"]
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "-qO",
+          "-",
+          "http://localhost:8222/healthz?js-enabled-only=true",
+        ]
+      interval: 1s
+      timeout: 5s
+      retries: 10
   redis:
     image: redis:alpine
     ports:
       - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 3s
+      interval: 1s
       timeout: 5s
-      retries: 5
-      start_period: 3s
+      retries: 10

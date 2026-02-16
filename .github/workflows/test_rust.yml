@@ -2,10 +2,10 @@ name: Test Rust Code
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
     paths:
-      - 'rust/**'
-      - '.github/workflows/test_rust.yml'
+      - "rust/**"
+      - ".github/workflows/test_rust.yml"
   pull_request:
 
 jobs:
@@ -36,13 +36,13 @@ jobs:
       - name: Setup Rustfmt
         run: rustup component add rustfmt
 
-      - name: Start NATS
+      - name: Start Message Brokers
         run: docker compose up -d
 
       - name: Run tests
         run: cargo test --all-features --target x86_64-unknown-linux-gnu -- --nocapture
         working-directory: rust
 
-      - name: Stop NATS
+      - name: Stop Message Brokers
         if: always()
         run: docker compose down
