@@ -6,7 +6,7 @@ test: testRust
 doc: rustDoc
 
 setup:
-	docker compose up -d
+	docker compose up -d --wait --wait-timeout 10
 
 teardown:
 	docker compose down
