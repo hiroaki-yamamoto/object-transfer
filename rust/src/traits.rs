@@ -167,8 +167,8 @@ use ::async_trait::async_trait;
 use ::futures::stream::BoxStream;
 use ::serde::{Serialize, de::DeserializeOwned};
 
-use crate::r#enum::Format;
 use crate::errors::{AckError, PubError, SubError, UnSubError};
+use crate::format::Format;
 
 #[cfg(test)]
 use crate::tests::entity::TestEntity;

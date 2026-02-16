@@ -4,7 +4,7 @@ use ::std::sync::Arc;
 use async_trait::async_trait;
 use serde::Serialize;
 
-use crate::r#enum::Format;
+use crate::format::Format;
 use crate::errors::PubError;
 use crate::traits::{PubCtxTrait, PubTrait};
 
@@ -113,7 +113,7 @@ mod tests {
   use ::rmp_serde::to_vec as to_msgpack;
   use ::serde_json::to_vec as jsonify;
 
-  use crate::r#enum::Format;
+  use crate::format::Format;
   use crate::tests::entity::TestEntity;
   use crate::traits::MockPubCtxTrait;
 

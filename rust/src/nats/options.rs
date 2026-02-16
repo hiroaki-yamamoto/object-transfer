@@ -4,7 +4,7 @@ use ::async_nats::jetstream::{
   consumer::pull::Config as PullConfig, stream::Config as StreamConfig,
 };
 
-use crate::r#enum::Format;
+use crate::format::Format;
 use crate::traits::SubOptTrait;
 
 /// Configuration options for creating an acknowledgment-based subscriber.

@@ -6,7 +6,7 @@ use futures::TryStreamExt;
 use futures::stream::BoxStream;
 use serde::de::DeserializeOwned;
 
-use crate::r#enum::Format;
+use crate::format::Format;
 use crate::errors::{SubError, UnSubError};
 use crate::traits::{
   AckTrait, SubCtxTrait, SubOptTrait, SubTrait, UnSubTrait,

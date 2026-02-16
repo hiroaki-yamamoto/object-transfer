@@ -17,14 +17,14 @@
 //! [Crates.io]: https://crates.io/crates/object_transfer
 
 mod ack_noop;
-pub mod r#enum;
 pub mod errors;
+pub mod format;
 #[cfg(feature = "nats")]
 pub mod nats;
-mod r#pub;
+mod publisher;
 #[cfg(feature = "redis")]
 pub mod redis;
-mod sub;
+mod subscriber;
 pub mod traits;
 mod unsub_noop;
 
@@ -32,8 +32,8 @@ mod unsub_noop;
 mod tests;
 
 pub use ack_noop::AckNoop;
-pub use r#enum::Format;
-pub use r#pub::Pub;
-pub use sub::Sub;
+pub use format::Format;
+pub use publisher::Pub;
+pub use subscriber::Sub;
 pub use traits::{PubTrait, SubOptTrait, SubTrait, UnSubTrait};
 pub use unsub_noop::UnSubNoop;
