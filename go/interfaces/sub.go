@@ -4,12 +4,12 @@ import "context"
 
 // SubMessage represents a message received from a subscription along with its acknowledgment handler.
 type SubMessage struct {
-	Item interface{}
-	Ack  AckTrait
+	Item any
+	Ack  IAck
 }
 
-// SubTrait is a subscription interface returning a stream of decoded items and ack handles.
-type SubTrait interface {
+// ISubTrait is a subscription interface returning a stream of decoded items and ack handles.
+type ISubTrait interface {
 	// Subscribe returns a channel of SubMessage containing decoded items and their acknowledgment handlers.
 	// The channel is closed when the subscription ends.
 	// Errors during deserialization or message retrieval are sent as part of the channel.

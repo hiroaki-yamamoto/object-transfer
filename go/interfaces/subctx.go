@@ -5,11 +5,11 @@ import "context"
 // SubCtxMessage represents a raw message received from a subscription with its acknowledgment handler.
 type SubCtxMessage struct {
 	Payload []byte
-	Ack     AckTrait
+	Ack     IAck
 }
 
-// SubCtxTrait is a context capable of producing a stream of raw messages with ack handles.
-type SubCtxTrait interface {
+// ISubCtxTrait is a context capable of producing a stream of raw messages with ack handles.
+type ISubCtxTrait interface {
 	// Subscribe returns a channel of SubCtxMessage containing raw byte payloads and their acknowledgment handlers.
 	// The channel is closed when the subscription ends.
 	// Errors during message retrieval are sent as part of the channel.

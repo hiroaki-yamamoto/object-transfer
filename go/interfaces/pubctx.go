@@ -2,8 +2,8 @@ package interfaces
 
 import "context"
 
-// PubCtxTrait is a context capable of publishing raw byte payloads.
-type PubCtxTrait interface {
+// IPubCtx is a context capable of publishing raw byte payloads.
+type IPubCtx interface {
 	// Publish sends a raw payload to a subject on the underlying broker.
 	//
 	// Parameters:

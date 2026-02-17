@@ -2,8 +2,8 @@ package interfaces
 
 import "context"
 
-// UnSubTrait allows canceling a subscription.
-type UnSubTrait interface {
+// IUnSub allows canceling a subscription.
+type IUnSub interface {
 	// Unsubscribe cancels the subscription.
 	//
 	// Parameters:

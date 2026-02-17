@@ -2,11 +2,11 @@ package interfaces
 
 import "context"
 
-// Publish is an abstraction for publishing typed items.
+// IPublish is an abstraction for publishing typed items.
 //
 // Implementors handle serialization and delivery to a concrete backend.
-type Publish interface {
-	// Publish sends a serializable item through the implementor.
+type IPublish interface {
+	// IPublish sends a serializable item through the implementor.
 	//
 	// Parameters:
 	// - ctx: context for cancellation and timeouts
