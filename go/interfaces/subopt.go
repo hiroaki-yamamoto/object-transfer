@@ -8,8 +8,6 @@ const (
 	FormatJSON Format = "json"
 	// FormatMsgpack represents MessagePack serialization format
 	FormatMsgpack Format = "msgpack"
-	// FormatProtobuf represents Protocol Buffer serialization format
-	FormatProtobuf Format = "protobuf"
 )
 
 // ISubOpt provides options that influence subscription behavior such as auto-ack and format.
