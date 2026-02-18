@@ -1,0 +1,31 @@
+name: Test Go Code
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "go/**"
+      - ".github/workflows/test_go.yml"
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v6
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go/go.mod
+          cache: true
+          cache-dependency-path: go/go.sum
+
+      - name: Run tests
+        run: make testGo
+
+      - name: Cleanup
+        if: always()
+        run: make clean

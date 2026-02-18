@@ -14,5 +14,8 @@ teardown:
 testRust: setup
 	make -C rust test
 
+testGo: setup
+	make -C go test
+
 rustDoc:
 	make -C rust doc
