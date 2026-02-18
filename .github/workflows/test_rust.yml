@@ -37,7 +37,7 @@ jobs:
         run: rustup component add rustfmt
 
       - name: Run tests
-        run: make
+        run: make testRust
 
       - name: Cleanup
         if: always()
