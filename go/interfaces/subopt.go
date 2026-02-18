@@ -1,14 +1,6 @@
 package interfaces
 
-// Format represents the serialization format used for messages.
-type Format string
-
-const (
-	// FormatJSON represents JSON serialization format
-	FormatJSON Format = "json"
-	// FormatMsgpack represents MessagePack serialization format
-	FormatMsgpack Format = "msgpack"
-)
+import "github.com/hiroaki-yamamoto/object-transfer/go/format"
 
 // ISubOpt provides options that influence subscription behavior such as auto-ack and format.
 type ISubOpt interface {
@@ -17,5 +9,5 @@ type ISubOpt interface {
 	GetAutoAck() bool
 
 	// GetFormat returns the serialization format used for messages.
-	GetFormat() Format
+	GetFormat() format.Format
 }
