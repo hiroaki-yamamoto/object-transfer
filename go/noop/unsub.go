@@ -28,8 +28,8 @@ type UnSubNoop struct {
 	ShouldErr bool
 }
 
-// New creates a new instance of UnSubNoop.
-func New(shouldErr bool) *UnSubNoop {
+// NewUnSubNoop creates a new instance of UnSubNoop.
+func NewUnSubNoop(shouldErr bool) *UnSubNoop {
 	return &UnSubNoop{ShouldErr: shouldErr}
 }
 
