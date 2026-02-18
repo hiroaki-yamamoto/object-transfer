@@ -1,9 +1,10 @@
-package publisher
+package publisher_test
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/hiroaki-yamamoto/object-transfer/go/errors"
 	"github.com/hiroaki-yamamoto/object-transfer/go/format"
+	"github.com/hiroaki-yamamoto/object-transfer/go/publisher"
 )
 
 // TestEntity is a simple test struct for serialization testing
@@ -29,6 +31,11 @@ func (m *MockPubCtx) Publish(ctx context.Context, topic string, payload []byte) 
 		return m.publishFunc(ctx, topic, payload)
 	}
 	return nil
+}
+
+func TestPublisher(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Publisher Suite")
 }
 
 var _ = Describe("Publisher", func() {
@@ -60,7 +67,7 @@ var _ = Describe("Publisher", func() {
 			return nil
 		}
 
-		pub := NewPub[TestEntity](mockCtx, subject, fmtType)
+		pub := publisher.NewPub[TestEntity](mockCtx, subject, fmtType)
 		err = pub.Publish(ctx, &entity)
 		Expect(err).NotTo(HaveOccurred())
 	}
@@ -82,7 +89,7 @@ var _ = Describe("Publisher", func() {
 			return testErr
 		}
 
-		pub := NewPub[TestEntity](mockCtx, subject, format.FormatJSON)
+		pub := publisher.NewPub[TestEntity](mockCtx, subject, format.FormatJSON)
 		err := pub.Publish(ctx, &entity)
 		Expect(err).To(HaveOccurred())
 		Expect(err).To(BeAssignableToTypeOf(&errors.PubError{}))
@@ -96,7 +103,7 @@ var _ = Describe("Publisher", func() {
 			return nil
 		}
 
-		pub := NewPub[TestEntity](mockCtx, subject, format.Format("INVALID"))
+		pub := publisher.NewPub[TestEntity](mockCtx, subject, format.Format("INVALID"))
 		err := pub.Publish(ctx, &entity)
 		Expect(err).To(HaveOccurred())
 		Expect(err).To(BeAssignableToTypeOf(&errors.PubError{}))
