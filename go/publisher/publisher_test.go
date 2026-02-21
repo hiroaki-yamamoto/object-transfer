@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -31,11 +30,6 @@ func (m *MockPubCtx) Publish(ctx context.Context, topic string, payload []byte) 
 		return m.publishFunc(ctx, topic, payload)
 	}
 	return nil
-}
-
-func TestPublisher(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Publisher Suite")
 }
 
 var _ = Describe("Publisher", func() {
