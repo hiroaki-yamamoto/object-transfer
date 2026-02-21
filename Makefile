@@ -2,7 +2,7 @@
 
 all: test
 clean: teardown
-test: testRust
+test: testRust testGo
 doc: rustDoc
 
 setup:

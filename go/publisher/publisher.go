@@ -63,7 +63,7 @@ func NewPub[T any](
 // # Parameters
 //   - ctx: context for cancellation and timeouts
 //   - obj: The typed value to encode and send to the subject
-func (p *Pub[T]) Publish(ctx context.Context, obj interface{}) error {
+func (p *Pub[T]) Publish(ctx context.Context, obj *T) error {
 	var payload []byte
 	var err error
 
