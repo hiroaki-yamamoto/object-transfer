@@ -6,6 +6,8 @@ on:
     paths:
       - "rust/**"
       - ".github/workflows/test_rust.yml"
+      - "docker-compose.yml"
+      - "Makefile"
   pull_request:
 
 jobs:
