@@ -1,0 +1,97 @@
+package nats
+
+import (
+	"context"
+
+	natssdk "github.com/nats-io/nats.go"
+
+	"github.com/hiroaki-yamamoto/object-transfer/go/interfaces"
+)
+
+// PushSubCtx wraps a push-based NATS [nats.Subscription] and implements
+// [interfaces.ISubCtxTrait].
+type PushSubCtx struct {
+	sub *natssdk.Subscription
+}
+
+// Subscribe returns a channel that yields messages from the push subscription.
+// The channel is closed when ctx is cancelled or the subscription encounters
+// an error.
+func (s *PushSubCtx) Subscribe(
+	ctx context.Context,
+) (<-chan interfaces.SubCtxMessage, error) {
+	ch := make(chan interfaces.SubCtxMessage)
+	go func() {
+		defer close(ch)
+		for {
+			msg, err := s.sub.NextMsgWithContext(ctx)
+			if err != nil {
+				return
+			}
+			select {
+			case ch <- interfaces.SubCtxMessage{
+				Payload: msg.Data,
+				Ack:     NewAck(msg),
+			}:
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+	return ch, nil
+}
+
+// NewPushSubCtx creates a new [PushSubCtx] wrapping the given
+// [nats.Subscription].
+func NewPushSubCtx(sub *natssdk.Subscription) *PushSubCtx {
+	return &PushSubCtx{sub: sub}
+}
+
+// PullSubCtx wraps a pull-based NATS [nats.Subscription] and implements
+// [interfaces.ISubCtxTrait].
+type PullSubCtx struct {
+	sub *natssdk.Subscription
+}
+
+// Subscribe returns a channel that yields messages fetched from the pull
+// subscription one at a time. The channel is closed when ctx is cancelled or
+// the subscription encounters an error.
+func (s *PullSubCtx) Subscribe(
+	ctx context.Context,
+) (<-chan interfaces.SubCtxMessage, error) {
+	ch := make(chan interfaces.SubCtxMessage)
+	go func() {
+		defer close(ch)
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				msgs, err := s.sub.Fetch(1, natssdk.Context(ctx))
+				if err != nil {
+					return
+				}
+				for _, msg := range msgs {
+					select {
+					case ch <- interfaces.SubCtxMessage{
+						Payload: msg.Data,
+						Ack:     NewAck(msg),
+					}:
+					case <-ctx.Done():
+						return
+					}
+				}
+			}
+		}
+	}()
+	return ch, nil
+}
+
+// NewPullSubCtx creates a new [PullSubCtx] wrapping the given
+// [nats.Subscription].
+func NewPullSubCtx(sub *natssdk.Subscription) *PullSubCtx {
+	return &PullSubCtx{sub: sub}
+}
+
+var _ interfaces.ISubCtxTrait = (*PushSubCtx)(nil)
+var _ interfaces.ISubCtxTrait = (*PullSubCtx)(nil)
