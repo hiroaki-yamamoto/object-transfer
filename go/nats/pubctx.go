@@ -18,7 +18,7 @@ type PubCtx struct {
 func (p *PubCtx) Publish(ctx context.Context, topic string, payload []byte) error {
 	_, err := p.js.Publish(topic, payload, natssdk.Context(ctx))
 	if err != nil {
-		return otErrors.PubBrokerError(NewBrokerError(err))
+		return otErrors.PubBrokerError(otErrors.NewBrokerError(err))
 	}
 	return nil
 }
