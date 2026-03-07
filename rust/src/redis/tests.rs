@@ -39,16 +39,19 @@ fn unique_stream_name(format: Format) -> String {
 
 async fn setup(format: Format) -> Option<(Pub<MyObj>, Sub<MyObj>)> {
   let client = redis::Client::open("redis://127.0.0.1:6379/").ok()?;
-  let con = client.get_multiplexed_async_connection().await.ok()?;
+  let pub_con = client.get_multiplexed_async_connection().await.ok()?;
+  let sub_con = client.get_multiplexed_async_connection().await.ok()?;
   let stream_name = unique_stream_name(format);
   let publisher_group = format!("{}_publisher", stream_name);
   let subscriber_group = format!("{}_subscriber", stream_name);
   let subscriber_consumer = format!("{}_consumer", stream_name);
 
-  let publisher =
-    Publisher::new(&con, PublisherConfig::new().group_name(publisher_group));
+  let publisher = Publisher::new(
+    &pub_con,
+    PublisherConfig::new().group_name(publisher_group),
+  );
   let subscriber = Arc::new(Subscriber::new(
-    &con,
+    &sub_con,
     SubscriberConfig::new(stream_name.clone())
       .group_name(subscriber_group)
       .consumer_name(subscriber_consumer)
