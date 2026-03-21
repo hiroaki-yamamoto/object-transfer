@@ -116,6 +116,8 @@ var _ = Describe("Nats", func() {
 				Expect(recv).To(Equal(obj))
 			case err := <-errCh:
 				Fail(fmt.Sprintf("subscription error: %v", err))
+			case <-ctx.Done():
+				Fail(fmt.Sprintf("context canceled while waiting for message: %v", ctx.Err()))
 			}
 
 			// Unsubscribe

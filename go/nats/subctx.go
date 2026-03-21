@@ -27,6 +27,18 @@ func (s *PushSubCtx) Subscribe(
 		for {
 			msg, err := s.sub.NextMsgWithContext(ctx)
 			if err != nil {
+				// Treat context cancellation and deadline exceeded as normal termination.
+				if errors.Is(err, context.Canceled) ||
+					errors.Is(err, context.DeadlineExceeded) ||
+					errors.Is(ctx.Err(), context.Canceled) ||
+					errors.Is(ctx.Err(), context.DeadlineExceeded) {
+					return
+				}
+				// Propagate transport or other errors to the subscriber before exiting.
+				select {
+				case ch <- interfaces.SubCtxMessage{Err: err}:
+				case <-ctx.Done():
+				}
 				return
 			}
 			select {
@@ -72,6 +84,12 @@ func (s *PullSubCtx) Subscribe(
 				if err != nil {
 					if errors.Is(err, natssdk.ErrTimeout) {
 						continue
+					}
+					// Surface non-timeout fetch errors to the consumer so they can
+					// distinguish broker/subscription failures from clean cancellation.
+					select {
+					case ch <- interfaces.SubCtxMessage{Err: err}:
+					case <-ctx.Done():
 					}
 					return
 				}

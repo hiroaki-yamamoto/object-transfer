@@ -6,7 +6,7 @@ import "context"
 //
 // Implementors handle serialization and delivery to a concrete backend.
 type IPublish interface {
-	// IPublish sends a serializable item through the implementor.
+	// Publish sends a serializable item through the implementor.
 	//
 	// Parameters:
 	// - ctx: context for cancellation and timeouts

@@ -48,6 +48,12 @@ func (f *SubFetcher) Subscribe(ctx context.Context) (<-chan interfaces.SubCtxMes
 		)
 		return nil, err
 	}
+	if len(f.options.streamConfig.Subjects) > 1 {
+		err := NewSubFetcherError(
+			fmt.Errorf("multiple subjects configured on stream; only a single subject is supported"),
+		)
+		return nil, err
+	}
 	subject := f.options.streamConfig.Subjects[0]
 
 	sub, err := f.stream.PullSubscribe(

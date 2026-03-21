@@ -66,7 +66,7 @@ func (o *AckSubOptions) Name(name string) *AckSubOptions {
 // Subjects sets the subjects that the stream should listen to.
 //
 // Arguments:
-//   - subjects: A slice of subject patterns to subscribe to
+//   - subjects: One or more subject patterns to subscribe to (variadic)
 //
 // Returns:
 // The AckSubOptions instance for method chaining

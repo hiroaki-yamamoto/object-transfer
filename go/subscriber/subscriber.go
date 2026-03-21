@@ -29,7 +29,7 @@ import (
 //	}
 //
 //	options := nats.NewAckSubOptions(format.FormatJSON, "events")
-//	options.Subjects([]string{"events.user_created"})
+//	options.Subjects("events.user_created")
 //	options.DurableName("user-created")
 //	options.AutoAck(false)
 //
