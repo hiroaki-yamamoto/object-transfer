@@ -35,7 +35,7 @@ jobs:
         run: |
           git add .
           git commit -m "Update version to $TAG_VERSION for release"
-        working-directory: ${GITHUB_WORKSPACE}
+        working-directory: .
 
       - name: Check if version already published
         run: |
