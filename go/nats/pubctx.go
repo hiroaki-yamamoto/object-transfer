@@ -15,7 +15,7 @@ type PubCtx struct {
 }
 
 // Publish sends raw bytes to the given topic via the JetStream context.
-func (p *PubCtx) Publish(ctx context.Context, topic string, payload []byte) error {
+func (p *PubCtx) Publish(ctx context.Context, topic string, payload []byte) *otErrors.PubError {
 	_, err := p.js.Publish(topic, payload, natssdk.Context(ctx))
 	if err != nil {
 		return otErrors.PubBrokerError(otErrors.NewBrokerError(err))

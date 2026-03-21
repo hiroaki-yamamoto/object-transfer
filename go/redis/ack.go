@@ -58,8 +58,8 @@ func NewAck(
 //
 // # Returns
 //
-// An error if the acknowledgment operation failed (e.g., connection error).
-func (a *Ack) Ack(ctx context.Context) error {
+// An AckError if the acknowledgment operation failed (e.g., connection error).
+func (a *Ack) Ack(ctx context.Context) *errors.AckError {
 	err := a.client.XAck(ctx, a.streamName, a.group, a.id).Err()
 	if err != nil {
 		return errors.AckBrokerError(

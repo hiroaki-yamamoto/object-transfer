@@ -56,7 +56,7 @@ func New(client goredis.Cmdable, cfg *config.PublisherConfig) *Publisher {
 // # Returns
 //
 // An errors.PubError if the operation fails.
-func (p *Publisher) Publish(ctx context.Context, topic string, payload []byte) error {
+func (p *Publisher) Publish(ctx context.Context, topic string, payload []byte) *errors.PubError {
 	groupName := topic
 	if p.cfg.GroupName != nil {
 		groupName = *p.cfg.GroupName

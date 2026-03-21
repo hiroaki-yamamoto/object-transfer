@@ -1,6 +1,10 @@
 package interfaces
 
-import "context"
+import (
+	"context"
+
+	"github.com/hiroaki-yamamoto/object-transfer/go/errors"
+)
 
 // IPubCtx is a context capable of publishing raw byte payloads.
 type IPubCtx interface {
@@ -12,5 +16,5 @@ type IPubCtx interface {
 	// - payload: Serialized bytes to forward to the transport
 	//
 	// Returns an error if publishing fails.
-	Publish(ctx context.Context, topic string, payload []byte) error
+	Publish(ctx context.Context, topic string, payload []byte) *errors.PubError
 }

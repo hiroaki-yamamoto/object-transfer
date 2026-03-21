@@ -1,6 +1,10 @@
 package interfaces
 
-import "context"
+import (
+	"context"
+
+	"github.com/hiroaki-yamamoto/object-transfer/go/errors"
+)
 
 // IAck provides the ability to acknowledge receipt of a message.
 type IAck interface {
@@ -10,5 +14,5 @@ type IAck interface {
 	// - ctx: context for cancellation and timeouts
 	//
 	// Returns an error if acknowledgment fails.
-	Ack(ctx context.Context) error
+	Ack(ctx context.Context) *errors.AckError
 }

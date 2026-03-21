@@ -81,7 +81,7 @@ func NewSub[T any](
 // # Returns
 // A channel that yields SubMessage items containing decoded messages and their ack handlers,
 // or an error if subscription fails.
-func (s *Sub[T]) Subscribe(ctx context.Context) (<-chan interfaces.SubMessage[T], error) {
+func (s *Sub[T]) Subscribe(ctx context.Context) (<-chan interfaces.SubMessage[T], *goErrors.SubError) {
 	// Get the raw messages from the context
 	rawMessages, err := s.ctx.Subscribe(ctx)
 	if err != nil {
@@ -112,7 +112,7 @@ func (s *Sub[T]) Subscribe(ctx context.Context) (<-chan interfaces.SubMessage[T]
 			// Deserialize the message based on format (before auto-ack to avoid
 			// acknowledging messages that cannot be decoded).
 			var decodedItem T
-			var decodeErr error
+			var decodeErr *goErrors.SubError
 			switch s.options.GetFormat() {
 			case format.FormatMsgpack:
 				if err := msgpack.Unmarshal(rawMsg.Payload, &decodedItem); err != nil {
@@ -145,7 +145,7 @@ func (s *Sub[T]) Subscribe(ctx context.Context) (<-chan interfaces.SubMessage[T]
 					select {
 					case messages <- interfaces.SubMessage[T]{
 						Item:  nil,
-						Error: err,
+						Error: goErrors.SubAckError(err),
 						Ack:   rawMsg.Ack,
 					}:
 					case <-ctx.Done():
@@ -182,7 +182,7 @@ func (s *Sub[T]) Subscribe(ctx context.Context) (<-chan interfaces.SubMessage[T]
 //   - ctx: context for cancellation and timeouts
 //
 // # Returns
-// An error if unsubscription fails.
-func (s *Sub[T]) Unsubscribe(ctx context.Context) error {
+// An UnSubError if unsubscription fails.
+func (s *Sub[T]) Unsubscribe(ctx context.Context) *goErrors.UnSubError {
 	return s.unsub.Unsubscribe(ctx)
 }

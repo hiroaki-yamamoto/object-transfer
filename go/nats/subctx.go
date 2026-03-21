@@ -2,10 +2,11 @@ package nats
 
 import (
 	"context"
-	"errors"
+	stderrors "errors"
 
 	natssdk "github.com/nats-io/nats.go"
 
+	otErrors "github.com/hiroaki-yamamoto/object-transfer/go/errors"
 	"github.com/hiroaki-yamamoto/object-transfer/go/interfaces"
 )
 
@@ -20,7 +21,7 @@ type PushSubCtx struct {
 // an error.
 func (s *PushSubCtx) Subscribe(
 	ctx context.Context,
-) (<-chan interfaces.SubCtxMessage, error) {
+) (<-chan interfaces.SubCtxMessage, *otErrors.SubError) {
 	ch := make(chan interfaces.SubCtxMessage)
 	go func() {
 		defer close(ch)
@@ -28,15 +29,17 @@ func (s *PushSubCtx) Subscribe(
 			msg, err := s.sub.NextMsgWithContext(ctx)
 			if err != nil {
 				// Treat context cancellation and deadline exceeded as normal termination.
-				if errors.Is(err, context.Canceled) ||
-					errors.Is(err, context.DeadlineExceeded) ||
-					errors.Is(ctx.Err(), context.Canceled) ||
-					errors.Is(ctx.Err(), context.DeadlineExceeded) {
+				if stderrors.Is(err, context.Canceled) ||
+					stderrors.Is(err, context.DeadlineExceeded) ||
+					stderrors.Is(ctx.Err(), context.Canceled) ||
+					stderrors.Is(ctx.Err(), context.DeadlineExceeded) {
 					return
 				}
 				// Propagate transport or other errors to the subscriber before exiting.
 				select {
-				case ch <- interfaces.SubCtxMessage{Err: err}:
+				case ch <- interfaces.SubCtxMessage{Err: otErrors.SubBrokerError(
+					otErrors.NewBrokerError(err),
+				)}:
 				case <-ctx.Done():
 				}
 				return
@@ -71,7 +74,7 @@ type PullSubCtx struct {
 // the subscription encounters an error.
 func (s *PullSubCtx) Subscribe(
 	ctx context.Context,
-) (<-chan interfaces.SubCtxMessage, error) {
+) (<-chan interfaces.SubCtxMessage, *otErrors.SubError) {
 	ch := make(chan interfaces.SubCtxMessage)
 	go func() {
 		defer close(ch)
@@ -82,13 +85,15 @@ func (s *PullSubCtx) Subscribe(
 			default:
 				msgs, err := s.sub.Fetch(1, natssdk.Context(ctx))
 				if err != nil {
-					if errors.Is(err, natssdk.ErrTimeout) {
+					if stderrors.Is(err, natssdk.ErrTimeout) {
 						continue
 					}
 					// Surface non-timeout fetch errors to the consumer so they can
 					// distinguish broker/subscription failures from clean cancellation.
 					select {
-					case ch <- interfaces.SubCtxMessage{Err: err}:
+					case ch <- interfaces.SubCtxMessage{Err: otErrors.SubBrokerError(
+						otErrors.NewBrokerError(err),
+					)}:
 					case <-ctx.Done():
 					}
 					return

@@ -1,6 +1,10 @@
 package noop
 
-import "context"
+import (
+	"context"
+
+	"github.com/hiroaki-yamamoto/object-transfer/go/errors"
+)
 
 // AckNoop is an acknowledgment handler that performs no operation.
 //
@@ -10,7 +14,7 @@ import "context"
 type AckNoop struct{}
 
 // Ack performs no operation and always succeeds.
-func (a *AckNoop) Ack(ctx context.Context) error {
+func (a *AckNoop) Ack(ctx context.Context) *errors.AckError {
 	return nil
 }
 

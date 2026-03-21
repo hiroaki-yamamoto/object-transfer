@@ -41,8 +41,8 @@ func NewUnSubNoop(shouldErr bool) *UnSubNoop {
 // Parameters:
 // - ctx: context for cancellation and timeouts
 //
-// Returns an error if ShouldErr is true, otherwise nil.
-func (u *UnSubNoop) Unsubscribe(ctx context.Context) error {
+// Returns an UnSubError if ShouldErr is true, otherwise nil.
+func (u *UnSubNoop) Unsubscribe(ctx context.Context) *errors.UnSubError {
 	if u.ShouldErr {
 		return errors.ErrNoHandler
 	}

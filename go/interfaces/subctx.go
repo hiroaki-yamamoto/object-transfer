@@ -1,6 +1,10 @@
 package interfaces
 
-import "context"
+import (
+	"context"
+
+	"github.com/hiroaki-yamamoto/object-transfer/go/errors"
+)
 
 // SubCtxMessage represents a raw message received from a subscription with its acknowledgment handler.
 // If Err is non-nil, the message represents a retrieval error from the transport layer
@@ -8,7 +12,7 @@ import "context"
 type SubCtxMessage struct {
 	Payload []byte
 	Ack     IAck
-	Err     error
+	Err     *errors.SubError
 }
 
 // ISubCtxTrait is a context capable of producing a stream of raw messages with ack handles.
@@ -20,5 +24,5 @@ type ISubCtxTrait interface {
 	// - ctx: context for cancellation and timeouts
 	//
 	// Returns a channel that yields messages, or an error if the subscription cannot be established.
-	Subscribe(ctx context.Context) (<-chan SubCtxMessage, error)
+	Subscribe(ctx context.Context) (<-chan SubCtxMessage, *errors.SubError)
 }

@@ -126,7 +126,7 @@ func (s *Subscriber) handleStreamIDs(
 func (s *Subscriber) autoclaim(
 	ctx context.Context,
 	autoClaimID string,
-) ([]redis.XMessage, string, error) {
+) ([]redis.XMessage, string, *errors.SubError) {
 	if s.cfg.AutoClaim == 0 {
 		return []redis.XMessage{}, autoClaimID, nil
 	}
@@ -166,7 +166,7 @@ func (s *Subscriber) autoclaim(
 // A channel that yields SubCtxMessage containing payload and ack handler, or an error if subscription fails.
 func (s *Subscriber) Subscribe(
 	ctx context.Context,
-) (<-chan interfaces.SubCtxMessage, error) {
+) (<-chan interfaces.SubCtxMessage, *errors.SubError) {
 	// Create the consumer group if it doesn't exist
 	err := bredis.MakeStreamGroup(ctx, s.client, s.cfg.TopicName, s.cfg.GroupName)
 	if err != nil {
@@ -195,11 +195,11 @@ func (s *Subscriber) Subscribe(
 			type autoClaimResult struct {
 				messages []redis.XMessage
 				nextID   string
-				err      error
+				err      *errors.SubError
 			}
 			type streamReadResult struct {
 				messages []redis.XMessage
-				err      error
+				err      *errors.SubError
 			}
 
 			autoClaimChan := make(chan autoClaimResult, 1)
@@ -305,8 +305,8 @@ func (s *Subscriber) Subscribe(
 //
 // # Returns
 //
-// An error if the unsubscription operation fails.
-func (s *Subscriber) Unsubscribe(ctx context.Context) error {
+// An UnSubError if the unsubscription operation fails.
+func (s *Subscriber) Unsubscribe(ctx context.Context) *errors.UnSubError {
 	err := s.client.XGroupDelConsumer(
 		ctx,
 		s.cfg.TopicName,

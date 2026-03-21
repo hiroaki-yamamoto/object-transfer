@@ -1,11 +1,15 @@
 package interfaces
 
-import "context"
+import (
+	"context"
+
+	"github.com/hiroaki-yamamoto/object-transfer/go/errors"
+)
 
 // SubMessage represents a message received from a subscription along with its acknowledgment handler.
 type SubMessage[T any] struct {
 	Item  *T
-	Error error
+	Error *errors.SubError
 	Ack   IAck
 }
 
@@ -19,5 +23,5 @@ type ISubTrait[T any] interface {
 	// - ctx: context for cancellation and timeouts
 	//
 	// Returns a channel that yields messages or an error if subscription fails.
-	Subscribe(ctx context.Context) (<-chan SubMessage[T], error)
+	Subscribe(ctx context.Context) (<-chan SubMessage[T], *errors.SubError)
 }

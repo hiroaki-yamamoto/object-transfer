@@ -2,11 +2,12 @@ package subfetcher
 
 import (
 	"context"
-	"errors"
+	stderrors "errors"
 	"fmt"
 
 	"github.com/nats-io/nats.go"
 
+	otErrors "github.com/hiroaki-yamamoto/object-transfer/go/errors"
 	"github.com/hiroaki-yamamoto/object-transfer/go/interfaces"
 	natstypes "github.com/hiroaki-yamamoto/object-transfer/go/nats"
 )
@@ -41,18 +42,22 @@ func NewSubFetcher(ctx context.Context, jsCtx nats.JetStreamContext, opts *AckSu
 // with the associated acknowledgment handles.
 //
 // This implements [interfaces.ISubCtxTrait].
-func (f *SubFetcher) Subscribe(ctx context.Context) (<-chan interfaces.SubCtxMessage, error) {
+func (f *SubFetcher) Subscribe(ctx context.Context) (<-chan interfaces.SubCtxMessage, *otErrors.SubError) {
 	if len(f.options.streamConfig.Subjects) == 0 {
 		err := NewSubFetcherError(
 			fmt.Errorf("stream must have at least one subject"),
 		)
-		return nil, err
+		return nil, otErrors.SubBrokerError(
+			otErrors.NewBrokerError(err),
+		)
 	}
 	if len(f.options.streamConfig.Subjects) > 1 {
 		err := NewSubFetcherError(
 			fmt.Errorf("multiple subjects configured on stream; only a single subject is supported"),
 		)
-		return nil, err
+		return nil, otErrors.SubBrokerError(
+			otErrors.NewBrokerError(err),
+		)
 	}
 	subject := f.options.streamConfig.Subjects[0]
 
@@ -62,7 +67,9 @@ func (f *SubFetcher) Subscribe(ctx context.Context) (<-chan interfaces.SubCtxMes
 		nats.Context(ctx),
 	)
 	if err != nil {
-		return nil, err
+		return nil, otErrors.SubBrokerError(
+			otErrors.NewBrokerError(NewSubFetcherError(err)),
+		)
 	}
 
 	ch := make(chan interfaces.SubCtxMessage)
@@ -75,12 +82,14 @@ func (f *SubFetcher) Subscribe(ctx context.Context) (<-chan interfaces.SubCtxMes
 			default:
 				msgs, err := sub.Fetch(1, nats.Context(ctx))
 				if err != nil {
-					if errors.Is(err, nats.ErrTimeout) {
+					if stderrors.Is(err, nats.ErrTimeout) {
 						continue
 					}
 					// Emit the error downstream before exiting
 					select {
-					case ch <- interfaces.SubCtxMessage{Err: NewSubFetcherError(err)}:
+					case ch <- interfaces.SubCtxMessage{Err: otErrors.SubBrokerError(
+						otErrors.NewBrokerError(NewSubFetcherError(err)),
+					)}:
 					case <-ctx.Done():
 					}
 					return
@@ -105,15 +114,19 @@ func (f *SubFetcher) Subscribe(ctx context.Context) (<-chan interfaces.SubCtxMes
 // Unsubscribe deletes the durable consumer associated with this fetcher.
 //
 // This implements [interfaces.IUnSub].
-func (f *SubFetcher) Unsubscribe(ctx context.Context) error {
+func (f *SubFetcher) Unsubscribe(ctx context.Context) *otErrors.UnSubError {
 	if f.options.consumerConfig.Durable == "" {
 		return nil
 	}
-	return f.stream.DeleteConsumer(
+	err := f.stream.DeleteConsumer(
 		f.options.streamConfig.Name,
 		f.options.consumerConfig.Durable,
 		nats.Context(ctx),
 	)
+	if err != nil {
+		return otErrors.UnSubBrokerError(otErrors.NewBrokerError(err))
+	}
+	return nil
 }
 
 var _ interfaces.ISubCtxTrait = (*SubFetcher)(nil)

@@ -3,7 +3,6 @@ package publisher
 import (
 	"context"
 	"encoding/json"
-	stderrors "errors"
 	"fmt"
 
 	"github.com/vmihailenco/msgpack/v5"
@@ -64,7 +63,7 @@ func NewPub[T any](
 // # Parameters
 //   - ctx: context for cancellation and timeouts
 //   - obj: The typed value to encode and send to the subject
-func (p *Pub[T]) Publish(ctx context.Context, obj *T) error {
+func (p *Pub[T]) Publish(ctx context.Context, obj interface{}) *errors.PubError {
 	var payload []byte
 	var err error
 
@@ -83,13 +82,9 @@ func (p *Pub[T]) Publish(ctx context.Context, obj *T) error {
 		return errors.NewPubError(fmt.Errorf("unsupported format: %v", p.format))
 	}
 
-	err = p.ctx.Publish(ctx, p.subject, payload)
-	if err != nil {
-		var pubErr *errors.PubError
-		if stderrors.As(err, &pubErr) {
-			return pubErr
-		}
-		return errors.PubBrokerError(errors.NewBrokerError(err))
+	pubErr := p.ctx.Publish(ctx, p.subject, payload)
+	if pubErr != nil {
+		return pubErr
 	}
 
 	return nil

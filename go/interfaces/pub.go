@@ -1,6 +1,10 @@
 package interfaces
 
-import "context"
+import (
+	"context"
+
+	"github.com/hiroaki-yamamoto/object-transfer/go/errors"
+)
 
 // IPublish is an abstraction for publishing typed items.
 //
@@ -13,5 +17,5 @@ type IPublish interface {
 	// - obj: The typed item to serialize and send to the backing transport
 	//
 	// Returns an error if publishing fails.
-	Publish(ctx context.Context, obj interface{}) error
+	Publish(ctx context.Context, obj interface{}) *errors.PubError
 }

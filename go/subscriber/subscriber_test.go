@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/vmihailenco/msgpack/v5"
 
+	"github.com/hiroaki-yamamoto/object-transfer/go/errors"
 	"github.com/hiroaki-yamamoto/object-transfer/go/format"
 	"github.com/hiroaki-yamamoto/object-transfer/go/interfaces"
 	"github.com/hiroaki-yamamoto/object-transfer/go/subscriber"
@@ -22,11 +23,11 @@ type TestEntity struct {
 
 // MockAck is a mock implementation of IAck
 type MockAck struct {
-	ackFunc func(ctx context.Context) error
+	ackFunc func(ctx context.Context) *errors.AckError
 	called  bool
 }
 
-func (m *MockAck) Ack(ctx context.Context) error {
+func (m *MockAck) Ack(ctx context.Context) *errors.AckError {
 	m.called = true
 	if m.ackFunc != nil {
 		return m.ackFunc(ctx)
@@ -40,7 +41,7 @@ type MockSubCtx struct {
 	index    int
 }
 
-func (m *MockSubCtx) Subscribe(ctx context.Context) (<-chan interfaces.SubCtxMessage, error) {
+func (m *MockSubCtx) Subscribe(ctx context.Context) (<-chan interfaces.SubCtxMessage, *errors.SubError) {
 	ch := make(chan interfaces.SubCtxMessage)
 	go func() {
 		defer close(ch)
@@ -71,10 +72,10 @@ func (m *MockSubOpt) GetFormat() format.Format {
 
 // MockUnSub is a mock implementation of IUnSub
 type MockUnSub struct {
-	unsubFunc func(ctx context.Context) error
+	unsubFunc func(ctx context.Context) *errors.UnSubError
 }
 
-func (m *MockUnSub) Unsubscribe(ctx context.Context) error {
+func (m *MockUnSub) Unsubscribe(ctx context.Context) *errors.UnSubError {
 	if m.unsubFunc != nil {
 		return m.unsubFunc(ctx)
 	}
@@ -170,8 +171,8 @@ var _ = Describe("Subscriber", func() {
 
 		ackErr := fmt.Errorf("ack failed")
 		ack := &MockAck{
-			ackFunc: func(ctx context.Context) error {
-				return ackErr
+			ackFunc: func(ctx context.Context) *errors.AckError {
+				return errors.NewAckError(ackErr)
 			},
 		}
 
@@ -191,7 +192,7 @@ var _ = Describe("Subscriber", func() {
 		for msg := range subMessages {
 			if msg.Error != nil && msg.Item == nil {
 				receivedErrors++
-				Expect(msg.Error).To(Equal(ackErr))
+				Expect(msg.Error).To(BeAssignableToTypeOf(&errors.SubError{}))
 			}
 		}
 
@@ -253,7 +254,7 @@ var _ = Describe("Subscriber", func() {
 	It("should unsubscribe successfully", func() {
 		unsubCalled := false
 		mockUnSub := &MockUnSub{
-			unsubFunc: func(ctx context.Context) error {
+			unsubFunc: func(ctx context.Context) *errors.UnSubError {
 				unsubCalled = true
 				return nil
 			},
@@ -272,8 +273,8 @@ var _ = Describe("Subscriber", func() {
 	It("should propagate unsubscribe errors", func() {
 		unsubErr := fmt.Errorf("unsubscribe failed")
 		mockUnSub := &MockUnSub{
-			unsubFunc: func(ctx context.Context) error {
-				return unsubErr
+			unsubFunc: func(ctx context.Context) *errors.UnSubError {
+				return errors.NewUnSubError(unsubErr)
 			},
 		}
 
@@ -283,6 +284,8 @@ var _ = Describe("Subscriber", func() {
 		sub := subscriber.NewSub[TestEntity](mockCtx, mockUnSub, mockOpt)
 		err := sub.Unsubscribe(ctx)
 
-		Expect(err).To(Equal(unsubErr))
+		Expect(err).To(HaveOccurred())
+		Expect(err).To(BeAssignableToTypeOf(&errors.UnSubError{}))
+		Expect(err).NotTo(Equal(unsubErr))
 	})
 })
