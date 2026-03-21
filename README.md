@@ -4,10 +4,14 @@
 
 | Service | Status |
 |---------|--------|
-| Rust Code Test | [![Test Rust Code Img]][Test Rust Code] |
+| Rust Test | [![Test Rust Code Img]][Test Rust Code] |
+| Go Test | [![GoTestImg]][GoTest] |
 
 [Test Rust Code Img]: https://github.com/hiroaki-yamamoto/object-transfer/actions/workflows/test_rust.yml/badge.svg
 [Test Rust Code]: https://github.com/hiroaki-yamamoto/object-transfer/actions/workflows/test_rust.yml
+
+[GoTestImg]: https://github.com/hiroaki-yamamoto/object-transfer/actions/workflows/test_go.yml/badge.svg
+[GoTest]: https://github.com/hiroaki-yamamoto/object-transfer/actions/workflows/test_go.yml
 
 ## Description
 
