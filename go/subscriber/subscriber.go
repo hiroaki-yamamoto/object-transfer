@@ -140,7 +140,7 @@ func (s *Sub[T]) Subscribe(ctx context.Context) (<-chan interfaces.SubMessage[T]
 			}
 
 			// Auto-ack after successful decode
-			if s.options.GetAutoAck() {
+			if s.options.GetAutoAck() && rawMsg.Ack != nil {
 				if err := rawMsg.Ack.Ack(ctx); err != nil {
 					select {
 					case messages <- interfaces.SubMessage[T]{
