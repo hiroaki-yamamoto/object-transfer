@@ -62,15 +62,10 @@ func NewAck(
 func (a *Ack) Ack(ctx context.Context) error {
 	err := a.client.XAck(ctx, a.streamName, a.group, a.id).Err()
 	if err != nil {
-		if redisErr, ok := err.(redis.Error); ok {
-			return errors.AckBrokerError(
-				errors.NewBrokerError(
-					rediserrors.NewAckError(&redisErr),
-				),
-			)
-		}
 		return errors.AckBrokerError(
-			errors.NewBrokerError(err),
+			errors.NewBrokerError(
+				rediserrors.NewAckError(err),
+			),
 		)
 	}
 	return nil

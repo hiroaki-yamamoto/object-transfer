@@ -118,14 +118,10 @@ func (s *Subscriber) autoclaim(
 	}).Result()
 
 	if err != nil {
-		redisErr, ok := err.(redis.Error)
-		if ok {
-			brokerErr := errors.NewBrokerError(
-				rediserrors.NewSubscribeAutoClaimError(&redisErr),
-			)
-			return nil, "", errors.SubBrokerError(brokerErr)
-		}
-		return nil, "", errors.SubBrokerError(errors.NewBrokerError(err))
+		brokerErr := errors.NewBrokerError(
+			rediserrors.NewSubscribeAutoClaimError(err),
+		)
+		return nil, "", errors.SubBrokerError(brokerErr)
 	}
 
 	return messages, next, nil
@@ -151,14 +147,11 @@ func (s *Subscriber) Subscribe(
 	// Create the consumer group if it doesn't exist
 	err := bredis.MakeStreamGroup(ctx, s.client, s.cfg.TopicName, s.cfg.GroupName)
 	if err != nil {
-		redisErr, ok := err.(redis.Error)
-		if ok {
-			brokerErr := errors.NewBrokerError(
-				rediserrors.NewSubscribeGroupCreationError(&redisErr),
-			)
-			return nil, errors.SubBrokerError(brokerErr)
-		}
-		return nil, errors.SubBrokerError(errors.NewBrokerError(err))
+		return nil, errors.SubBrokerError(
+			errors.NewBrokerError(
+				rediserrors.NewSubscribeGroupCreationError(err),
+			),
+		)
 	}
 
 	ch := make(chan interfaces.SubCtxMessage)
@@ -176,24 +169,22 @@ func (s *Subscriber) Subscribe(
 			}
 
 			// Run autoclaim and stream read in parallel
-			autoClaimChan := make(chan struct {
+			type autoClaimResult struct {
 				messages []redis.XMessage
 				nextID   string
 				err      error
-			})
-
-			streamReadChan := make(chan struct {
+			}
+			type streamReadResult struct {
 				messages []redis.XMessage
 				err      error
-			})
+			}
+
+			autoClaimChan := make(chan autoClaimResult, 1)
+			streamReadChan := make(chan streamReadResult, 1)
 
 			go func() {
 				messages, nextID, err := s.autoclaim(ctx, autoClaimID)
-				autoClaimChan <- struct {
-					messages []redis.XMessage
-					nextID   string
-					err      error
-				}{messages, nextID, err}
+				autoClaimChan <- autoClaimResult{messages, nextID, err}
 			}()
 
 			go func() {
@@ -209,53 +200,57 @@ func (s *Subscriber) Subscribe(
 				if err == nil && len(result) > 0 {
 					messages = result[0].Messages
 				} else if err != redis.Nil && err != nil {
-					// Only process actual errors, not nil results
-					redisErr, ok := err.(redis.Error)
-					if ok {
-						streamReadChan <- struct {
-							messages []redis.XMessage
-							err      error
-						}{nil, errors.SubBrokerError(
-							errors.NewBrokerError(
-								rediserrors.NewSubscribeReadError(&redisErr),
-							),
-						)}
-						return
-					}
-					streamReadChan <- struct {
-						messages []redis.XMessage
-						err      error
-					}{nil, errors.SubBrokerError(
-						errors.NewBrokerError(err),
+					streamReadChan <- streamReadResult{nil, errors.SubBrokerError(
+						errors.NewBrokerError(
+							rediserrors.NewSubscribeReadError(err),
+						),
 					)}
 					return
 				}
 
-				streamReadChan <- struct {
-					messages []redis.XMessage
-					err      error
-				}{messages, nil}
+				streamReadChan <- streamReadResult{messages, nil}
 			}()
 
-			// Wait for both operations to complete
-			autoClaimResult := <-autoClaimChan
-			streamReadResult := <-streamReadChan
+			// Wait for both operations to complete; give up if context is cancelled.
+			// Buffered channels ensure goroutines can always send and exit.
+			var acResult autoClaimResult
+			var srResult streamReadResult
 
-			if autoClaimResult.err != nil {
+			select {
+			case acResult = <-autoClaimChan:
+			case <-ctx.Done():
 				return
 			}
 
-			if streamReadResult.err != nil {
+			select {
+			case srResult = <-streamReadChan:
+			case <-ctx.Done():
+				return
+			}
+
+			if acResult.err != nil {
+				select {
+				case ch <- interfaces.SubCtxMessage{Err: acResult.err}:
+				case <-ctx.Done():
+				}
+				return
+			}
+
+			if srResult.err != nil {
+				select {
+				case ch <- interfaces.SubCtxMessage{Err: srResult.err}:
+				case <-ctx.Done():
+				}
 				return
 			}
 
 			// Update the autoclaim ID for the next iteration
-			autoClaimID = autoClaimResult.nextID
+			autoClaimID = acResult.nextID
 
 			// Collect all message IDs (from autoclaim and stream read)
 			var allMessages []redis.XMessage
-			allMessages = append(allMessages, autoClaimResult.messages...)
-			allMessages = append(allMessages, streamReadResult.messages...)
+			allMessages = append(allMessages, acResult.messages...)
+			allMessages = append(allMessages, srResult.messages...)
 
 			// Process all messages
 			values := s.handleStreamIds(ctx, allMessages)
@@ -297,16 +292,10 @@ func (s *Subscriber) Unsubscribe(ctx context.Context) error {
 	).Err()
 
 	if err != nil {
-		redisErr, ok := err.(redis.Error)
-		if ok {
-			return errors.UnSubBrokerError(
-				errors.NewBrokerError(
-					rediserrors.NewUnsubscribeError(&redisErr),
-				),
-			)
-		}
 		return errors.UnSubBrokerError(
-			errors.NewBrokerError(err),
+			errors.NewBrokerError(
+				rediserrors.NewUnsubscribeError(err),
+			),
 		)
 	}
 

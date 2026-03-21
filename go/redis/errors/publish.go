@@ -1,15 +1,11 @@
 package errors
 
-import (
-	"fmt"
-
-	"github.com/redis/go-redis/v9"
-)
+import "fmt"
 
 // PublishError represents errors that can occur during Redis publish operations.
 type PublishError struct {
 	ErrType PublishErrorType
-	Err     *redis.Error
+	Err     error
 }
 
 // PublishErrorType represents the type of publish error.
@@ -39,14 +35,11 @@ func (e *PublishError) Error() string {
 
 // Unwrap returns the underlying error for error chain inspection.
 func (e *PublishError) Unwrap() error {
-	if e.Err != nil {
-		return *e.Err
-	}
-	return nil
+	return e.Err
 }
 
 // NewGroupCreationError creates a PublishError for group creation failures.
-func NewGroupCreationError(err *redis.Error) *PublishError {
+func NewGroupCreationError(err error) *PublishError {
 	return &PublishError{
 		ErrType: GroupCreationError,
 		Err:     err,
@@ -54,7 +47,7 @@ func NewGroupCreationError(err *redis.Error) *PublishError {
 }
 
 // NewPushError creates a PublishError for message push failures.
-func NewPushError(err *redis.Error) *PublishError {
+func NewPushError(err error) *PublishError {
 	return &PublishError{
 		ErrType: PushError,
 		Err:     err,

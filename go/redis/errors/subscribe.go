@@ -1,15 +1,11 @@
 package errors
 
-import (
-	"fmt"
-
-	"github.com/redis/go-redis/v9"
-)
+import "fmt"
 
 // SubscribeError represents errors that can occur during Redis subscribe operations.
 type SubscribeError struct {
 	ErrType SubscribeErrorType
-	Err     *redis.Error
+	Err     error
 }
 
 // SubscribeErrorType represents the type of subscribe error.
@@ -43,14 +39,11 @@ func (e *SubscribeError) Error() string {
 
 // Unwrap returns the underlying error for error chain inspection.
 func (e *SubscribeError) Unwrap() error {
-	if e.Err != nil {
-		return *e.Err
-	}
-	return nil
+	return e.Err
 }
 
 // NewSubscribeGroupCreationError creates a SubscribeError for group creation failures.
-func NewSubscribeGroupCreationError(err *redis.Error) *SubscribeError {
+func NewSubscribeGroupCreationError(err error) *SubscribeError {
 	return &SubscribeError{
 		ErrType: SubscribeGroupCreationError,
 		Err:     err,
@@ -58,7 +51,7 @@ func NewSubscribeGroupCreationError(err *redis.Error) *SubscribeError {
 }
 
 // NewSubscribeAutoClaimError creates a SubscribeError for auto-claim failures.
-func NewSubscribeAutoClaimError(err *redis.Error) *SubscribeError {
+func NewSubscribeAutoClaimError(err error) *SubscribeError {
 	return &SubscribeError{
 		ErrType: SubscribeAutoClaimError,
 		Err:     err,
@@ -66,7 +59,7 @@ func NewSubscribeAutoClaimError(err *redis.Error) *SubscribeError {
 }
 
 // NewSubscribeReadError creates a SubscribeError for message reading failures.
-func NewSubscribeReadError(err *redis.Error) *SubscribeError {
+func NewSubscribeReadError(err error) *SubscribeError {
 	return &SubscribeError{
 		ErrType: SubscribeReadError,
 		Err:     err,

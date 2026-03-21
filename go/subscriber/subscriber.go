@@ -96,6 +96,19 @@ func (s *Sub[T]) Subscribe(ctx context.Context) (<-chan interfaces.SubMessage[T]
 		defer close(messages)
 
 		for rawMsg := range rawMessages {
+			// Propagate transport-level errors from the raw subscription layer.
+			if rawMsg.Err != nil {
+				select {
+				case messages <- interfaces.SubMessage[T]{
+					Error: rawMsg.Err,
+					Ack:   rawMsg.Ack,
+				}:
+				case <-ctx.Done():
+					return
+				}
+				continue
+			}
+
 			// Deserialize the message based on format (before auto-ack to avoid
 			// acknowledging messages that cannot be decoded).
 			var decodedItem T
@@ -142,10 +155,15 @@ func (s *Sub[T]) Subscribe(ctx context.Context) (<-chan interfaces.SubMessage[T]
 				}
 			}
 
+			// Allocate a new item per message to avoid the consumer observing
+			// later iterations overwriting the value behind a shared pointer.
+			item := new(T)
+			*item = decodedItem
+
 			// Send decoded message
 			select {
 			case messages <- interfaces.SubMessage[T]{
-				Item:  &decodedItem,
+				Item:  item,
 				Error: nil,
 				Ack:   rawMsg.Ack,
 			}:

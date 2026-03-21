@@ -3,9 +3,12 @@ package interfaces
 import "context"
 
 // SubCtxMessage represents a raw message received from a subscription with its acknowledgment handler.
+// If Err is non-nil, the message represents a retrieval error from the transport layer
+// and Payload will be nil.
 type SubCtxMessage struct {
 	Payload []byte
 	Ack     IAck
+	Err     error
 }
 
 // ISubCtxTrait is a context capable of producing a stream of raw messages with ack handles.

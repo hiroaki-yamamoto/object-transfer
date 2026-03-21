@@ -1,14 +1,10 @@
 package errors
 
-import (
-	"fmt"
-
-	"github.com/redis/go-redis/v9"
-)
+import "fmt"
 
 // UnsubscribeError represents errors that can occur during Redis unsubscription operations.
 type UnsubscribeError struct {
-	Err *redis.Error
+	Err error
 }
 
 // Error implements the error interface for UnsubscribeError.
@@ -21,14 +17,11 @@ func (e *UnsubscribeError) Error() string {
 
 // Unwrap returns the underlying error for error chain inspection.
 func (e *UnsubscribeError) Unwrap() error {
-	if e.Err != nil {
-		return *e.Err
-	}
-	return nil
+	return e.Err
 }
 
-// NewUnsubscribeError creates a new UnsubscribeError from a redis.Error.
-func NewUnsubscribeError(err *redis.Error) *UnsubscribeError {
+// NewUnsubscribeError creates a new UnsubscribeError from an error.
+func NewUnsubscribeError(err error) *UnsubscribeError {
 	return &UnsubscribeError{
 		Err: err,
 	}

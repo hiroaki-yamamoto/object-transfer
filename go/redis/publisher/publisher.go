@@ -65,16 +65,11 @@ func (p *Publisher) Publish(ctx context.Context, topic string, payload []byte) e
 	// Ensure the stream consumer group exists
 	err := bredis.MakeStreamGroup(ctx, p.client, topic, groupName)
 	if err != nil {
-		// Convert redis error to PublishError with GroupCreationError type
-		redisErr, ok := err.(goredis.Error)
-		if ok {
-			return errors.PubBrokerError(
-				errors.NewBrokerError(
-					rediserrors.NewGroupCreationError(&redisErr),
-				),
-			)
-		}
-		return errors.PubBrokerError(errors.NewBrokerError(err))
+		return errors.PubBrokerError(
+			errors.NewBrokerError(
+				rediserrors.NewGroupCreationError(err),
+			),
+		)
 	}
 
 	// Add message to the stream with MAXLEN constraint
@@ -85,15 +80,11 @@ func (p *Publisher) Publish(ctx context.Context, topic string, payload []byte) e
 		Values: []interface{}{"data", payload},
 	}).Err()
 	if err != nil {
-		// Convert redis error to PublishError with PushError type
-		if redisErr, ok := err.(goredis.Error); ok {
-			return errors.PubBrokerError(
-				errors.NewBrokerError(
-					rediserrors.NewPushError(&redisErr),
-				),
-			)
-		}
-		return errors.PubBrokerError(errors.NewBrokerError(err))
+		return errors.PubBrokerError(
+			errors.NewBrokerError(
+				rediserrors.NewPushError(err),
+			),
+		)
 	}
 
 	return nil

@@ -3,6 +3,7 @@ package publisher
 import (
 	"context"
 	"encoding/json"
+	stderrors "errors"
 	"fmt"
 
 	"github.com/vmihailenco/msgpack/v5"
@@ -84,6 +85,10 @@ func (p *Pub[T]) Publish(ctx context.Context, obj *T) error {
 
 	err = p.ctx.Publish(ctx, p.subject, payload)
 	if err != nil {
+		var pubErr *errors.PubError
+		if stderrors.As(err, &pubErr) {
+			return pubErr
+		}
 		return errors.PubBrokerError(errors.NewBrokerError(err))
 	}
 

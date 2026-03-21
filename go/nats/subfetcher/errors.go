@@ -10,9 +10,9 @@ type NatsSubFetcherError struct {
 }
 
 // Error implements the error interface, formatting as
-// "NATS JetStream Stream Creation Error: <cause>".
+// "NATS SubFetcher error: <cause>".
 func (e *NatsSubFetcherError) Error() string {
-	return fmt.Sprintf("NATS JetStream Stream Creation Error: %s", e.cause.Error())
+	return fmt.Sprintf("NATS SubFetcher error: %s", e.cause.Error())
 }
 
 // Unwrap returns the underlying error for error chain inspection.

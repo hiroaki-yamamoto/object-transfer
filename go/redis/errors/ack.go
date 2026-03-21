@@ -1,14 +1,10 @@
 package errors
 
-import (
-	"fmt"
-
-	"github.com/redis/go-redis/v9"
-)
+import "fmt"
 
 // AckError represents errors that can occur during Redis acknowledgment operations.
 type AckError struct {
-	Err *redis.Error
+	Err error
 }
 
 // Error implements the error interface for AckError.
@@ -21,14 +17,11 @@ func (e *AckError) Error() string {
 
 // Unwrap returns the underlying error for error chain inspection.
 func (e *AckError) Unwrap() error {
-	if e.Err != nil {
-		return *e.Err
-	}
-	return nil
+	return e.Err
 }
 
-// NewAckError creates a new AckError from a redis.Error.
-func NewAckError(err *redis.Error) *AckError {
+// NewAckError creates a new AckError from an error.
+func NewAckError(err error) *AckError {
 	return &AckError{
 		Err: err,
 	}

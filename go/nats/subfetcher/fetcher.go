@@ -72,6 +72,11 @@ func (f *SubFetcher) Subscribe(ctx context.Context) (<-chan interfaces.SubCtxMes
 					if errors.Is(err, nats.ErrTimeout) {
 						continue
 					}
+					// Emit the error downstream before exiting
+					select {
+					case ch <- interfaces.SubCtxMessage{Err: NewSubFetcherError(err)}:
+					case <-ctx.Done():
+					}
 					return
 				}
 				for _, msg := range msgs {
