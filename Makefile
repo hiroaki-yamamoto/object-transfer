@@ -2,7 +2,7 @@
 
 all: test
 clean: teardown
-test: testRust
+test: testRust testGo
 doc: rustDoc
 
 setup:
@@ -13,6 +13,9 @@ teardown:
 
 testRust: setup
 	make -C rust test
+
+testGo: setup
+	make -C go test
 
 rustDoc:
 	make -C rust doc
