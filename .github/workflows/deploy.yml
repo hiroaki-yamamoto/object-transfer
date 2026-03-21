@@ -33,7 +33,7 @@ jobs:
           cargo set-version $TAG_VERSION
       - name: Commit version update
         run: |
-          git add Cargo.toml Cargo.lock
+          git add .
           git commit -m "Update version to $TAG_VERSION for release"
         working-directory: ${GITHUB_WORKSPACE}
 
@@ -51,6 +51,7 @@ jobs:
   gh-release:
     name: Create Github Release
     runs-on: ubuntu-latest
+    needs: publish-crates
     steps:
       - uses: actions/checkout@v6
       - name: Create Github Release
@@ -59,3 +60,5 @@ jobs:
             --repo hiroaki-yamamoto/object-transfer \
             --title "Release ${{ github.ref_name }}" \
             --generate-notes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
