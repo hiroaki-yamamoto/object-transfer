@@ -42,6 +42,10 @@ func New(client redis.Cmdable, cfg *config.SubscriberConfig) *Subscriber {
 
 // handleStreamIds processes stream IDs and extracts payloads with their acknowledgment handlers.
 //
+// Malformed entries (missing "data" field or unexpected type) are returned as
+// SubCtxMessage{Err: ..., Ack: ...} so callers can decide whether to acknowledge
+// or drop them, preventing messages from accumulating in the pending-entry list.
+//
 // # Arguments
 //
 //   - _ (ctx): Context for cancellation
@@ -49,16 +53,34 @@ func New(client redis.Cmdable, cfg *config.SubscriberConfig) *Subscriber {
 //
 // # Returns
 //
-// A slice of tuples containing (payload bytes, IAck handler)
+// A slice of SubCtxMessage containing payloads or errors with their acknowledgment handlers.
 func (s *Subscriber) handleStreamIds(
 	_ context.Context,
 	streamIDs []redis.XMessage,
 ) []interfaces.SubCtxMessage {
 	var results []interfaces.SubCtxMessage
 	for _, msg := range streamIDs {
+		// Always create the ack handler first so malformed entries can also be
+		// returned with an Ack, letting callers decide whether to acknowledge or
+		// drop them and avoid entries accumulating in the pending-entry list.
+		ack := bredis.NewAck(
+			s.client,
+			s.cfg.GroupName,
+			s.cfg.TopicName,
+			msg.ID,
+		)
+
 		// Extract the "data" field from the message
 		data, ok := msg.Values["data"]
 		if !ok {
+			results = append(results, interfaces.SubCtxMessage{
+				Err: errors.SubBrokerError(
+					errors.NewBrokerError(
+						rediserrors.NewSubscribeMissingDataFieldError(msg.ID),
+					),
+				),
+				Ack: ack,
+			})
 			continue
 		}
 
@@ -70,15 +92,16 @@ func (s *Subscriber) handleStreamIds(
 		case []byte:
 			payload = v
 		default:
+			results = append(results, interfaces.SubCtxMessage{
+				Err: errors.SubBrokerError(
+					errors.NewBrokerError(
+						rediserrors.NewSubscribeInvalidDataTypeError(msg.ID, data),
+					),
+				),
+				Ack: ack,
+			})
 			continue
 		}
-
-		ack := bredis.NewAck(
-			s.client,
-			s.cfg.GroupName,
-			s.cfg.TopicName,
-			msg.ID,
-		)
 
 		results = append(results, interfaces.SubCtxMessage{
 			Payload: payload,
