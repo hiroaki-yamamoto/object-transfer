@@ -40,7 +40,7 @@ func New(client redis.Cmdable, cfg *config.SubscriberConfig) *Subscriber {
 	}
 }
 
-// handleStreamIds processes stream IDs and extracts payloads with their acknowledgment handlers.
+// handleStreamIDs processes stream IDs and extracts payloads with their acknowledgment handlers.
 //
 // Malformed entries (missing "data" field or unexpected type) are returned as
 // SubCtxMessage{Err: ..., Ack: ...} so callers can decide whether to acknowledge
@@ -54,7 +54,7 @@ func New(client redis.Cmdable, cfg *config.SubscriberConfig) *Subscriber {
 // # Returns
 //
 // A slice of SubCtxMessage containing payloads or errors with their acknowledgment handlers.
-func (s *Subscriber) handleStreamIds(
+func (s *Subscriber) handleStreamIDs(
 	_ context.Context,
 	streamIDs []redis.XMessage,
 ) []interfaces.SubCtxMessage {
@@ -276,7 +276,7 @@ func (s *Subscriber) Subscribe(
 			allMessages = append(allMessages, srResult.messages...)
 
 			// Process all messages
-			values := s.handleStreamIds(ctx, allMessages)
+			values := s.handleStreamIDs(ctx, allMessages)
 
 			for _, value := range values {
 				select {
