@@ -2,6 +2,7 @@ package nats
 
 import (
 	"context"
+	"errors"
 
 	natssdk "github.com/nats-io/nats.go"
 
@@ -69,6 +70,9 @@ func (s *PullSubCtx) Subscribe(
 			default:
 				msgs, err := s.sub.Fetch(1, natssdk.Context(ctx))
 				if err != nil {
+					if errors.Is(err, natssdk.ErrTimeout) {
+						continue
+					}
 					return
 				}
 				for _, msg := range msgs {

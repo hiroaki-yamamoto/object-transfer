@@ -7,6 +7,7 @@ import (
 
 	"github.com/vmihailenco/msgpack/v5"
 
+	goErrors "github.com/hiroaki-yamamoto/object-transfer/go/errors"
 	"github.com/hiroaki-yamamoto/object-transfer/go/format"
 	"github.com/hiroaki-yamamoto/object-transfer/go/interfaces"
 )
@@ -95,53 +96,61 @@ func (s *Sub[T]) Subscribe(ctx context.Context) (<-chan interfaces.SubMessage[T]
 		defer close(messages)
 
 		for rawMsg := range rawMessages {
-			// Auto-ack if enabled
-			if s.options.GetAutoAck() {
-				if err := rawMsg.Ack.Ack(ctx); err != nil {
-					messages <- interfaces.SubMessage[T]{
-						Item:  nil,
-						Error: err,
-						Ack:   rawMsg.Ack,
-					}
-					continue
-				}
-			}
-
-			// Deserialize the message based on format
+			// Deserialize the message based on format (before auto-ack to avoid
+			// acknowledging messages that cannot be decoded).
 			var decodedItem T
+			var decodeErr error
 			switch s.options.GetFormat() {
 			case format.FormatMsgpack:
 				if err := msgpack.Unmarshal(rawMsg.Payload, &decodedItem); err != nil {
-					messages <- interfaces.SubMessage[T]{
-						Item:  nil,
-						Error: err,
-						Ack:   rawMsg.Ack,
-					}
-					continue
+					decodeErr = goErrors.SubMessagePackDecodeError(err)
 				}
 			case format.FormatJSON:
 				if err := json.Unmarshal(rawMsg.Payload, &decodedItem); err != nil {
-					messages <- interfaces.SubMessage[T]{
-						Item:  nil,
-						Error: err,
-						Ack:   rawMsg.Ack,
-					}
-					continue
+					decodeErr = goErrors.SubJsonError(err)
 				}
 			default:
-				messages <- interfaces.SubMessage[T]{
+				decodeErr = goErrors.NewSubError(fmt.Errorf("unsupported format: %v", s.options.GetFormat()))
+			}
+
+			if decodeErr != nil {
+				select {
+				case messages <- interfaces.SubMessage[T]{
 					Item:  nil,
-					Error: fmt.Errorf("unsupported format: %v", s.options.GetFormat()),
+					Error: decodeErr,
 					Ack:   rawMsg.Ack,
+				}:
+				case <-ctx.Done():
+					return
 				}
 				continue
 			}
 
+			// Auto-ack after successful decode
+			if s.options.GetAutoAck() {
+				if err := rawMsg.Ack.Ack(ctx); err != nil {
+					select {
+					case messages <- interfaces.SubMessage[T]{
+						Item:  nil,
+						Error: err,
+						Ack:   rawMsg.Ack,
+					}:
+					case <-ctx.Done():
+						return
+					}
+					continue
+				}
+			}
+
 			// Send decoded message
-			messages <- interfaces.SubMessage[T]{
+			select {
+			case messages <- interfaces.SubMessage[T]{
 				Item:  &decodedItem,
 				Error: nil,
 				Ack:   rawMsg.Ack,
+			}:
+			case <-ctx.Done():
+				return
 			}
 		}
 	}()

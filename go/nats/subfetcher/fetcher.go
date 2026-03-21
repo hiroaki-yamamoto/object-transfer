@@ -2,6 +2,7 @@ package subfetcher
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/nats-io/nats.go"
@@ -41,13 +42,13 @@ func NewSubFetcher(ctx context.Context, jsCtx nats.JetStreamContext, opts *AckSu
 //
 // This implements [interfaces.ISubCtxTrait].
 func (f *SubFetcher) Subscribe(ctx context.Context) (<-chan interfaces.SubCtxMessage, error) {
-	subject := f.options.streamConfig.Subjects[0]
 	if len(f.options.streamConfig.Subjects) == 0 {
 		err := NewSubFetcherError(
 			fmt.Errorf("stream must have at least one subject"),
 		)
 		return nil, err
 	}
+	subject := f.options.streamConfig.Subjects[0]
 
 	sub, err := f.stream.PullSubscribe(
 		subject,
@@ -68,6 +69,9 @@ func (f *SubFetcher) Subscribe(ctx context.Context) (<-chan interfaces.SubCtxMes
 			default:
 				msgs, err := sub.Fetch(1, nats.Context(ctx))
 				if err != nil {
+					if errors.Is(err, nats.ErrTimeout) {
+						continue
+					}
 					return
 				}
 				for _, msg := range msgs {

@@ -43,7 +43,10 @@ func (e *SubscribeError) Error() string {
 
 // Unwrap returns the underlying error for error chain inspection.
 func (e *SubscribeError) Unwrap() error {
-	return *e.Err
+	if e.Err != nil {
+		return *e.Err
+	}
+	return nil
 }
 
 // NewSubscribeGroupCreationError creates a SubscribeError for group creation failures.

@@ -11,12 +11,11 @@ type SubCtxMessage struct {
 // ISubCtxTrait is a context capable of producing a stream of raw messages with ack handles.
 type ISubCtxTrait interface {
 	// Subscribe returns a channel of SubCtxMessage containing raw byte payloads and their acknowledgment handlers.
-	// The channel is closed when the subscription ends.
-	// Errors during message retrieval are sent as part of the channel.
+	// The channel is closed when the subscription ends or the provided context is done.
 	//
 	// Parameters:
 	// - ctx: context for cancellation and timeouts
 	//
-	// Returns a channel that yields messages or an error if subscription fails.
+	// Returns a channel that yields messages, or an error if the subscription cannot be established.
 	Subscribe(ctx context.Context) (<-chan SubCtxMessage, error)
 }

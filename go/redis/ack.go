@@ -6,6 +6,7 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	"github.com/hiroaki-yamamoto/object-transfer/go/errors"
+	rediserrors "github.com/hiroaki-yamamoto/object-transfer/go/redis/errors"
 )
 
 // Ack represents an acknowledgment for a message in a Redis stream consumer group.
@@ -61,6 +62,13 @@ func NewAck(
 func (a *Ack) Ack(ctx context.Context) error {
 	err := a.client.XAck(ctx, a.streamName, a.group, a.id).Err()
 	if err != nil {
+		if redisErr, ok := err.(redis.Error); ok {
+			return errors.AckBrokerError(
+				errors.NewBrokerError(
+					rediserrors.NewAckError(&redisErr),
+				),
+			)
+		}
 		return errors.AckBrokerError(
 			errors.NewBrokerError(err),
 		)

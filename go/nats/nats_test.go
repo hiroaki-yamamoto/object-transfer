@@ -67,7 +67,6 @@ func setup(
 }
 
 var _ = Describe("Nats", func() {
-	fmt.Println("Checkpoint 1")
 	testRoundtrip := func(fmtType format.Format) func() {
 		return func() {
 			ctx := context.Background()
