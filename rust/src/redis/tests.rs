@@ -4,29 +4,13 @@ use ::std::time::{SystemTime, UNIX_EPOCH};
 use futures::StreamExt;
 use serde::{Deserialize, Serialize};
 
+use crate::options::SubOpt;
 use crate::redis::{Publisher, PublisherConfig, Subscriber, SubscriberConfig};
-use crate::traits::SubOptTrait;
 use crate::{Format, Pub, PubTrait, Sub, SubTrait, UnSubTrait};
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 struct MyObj {
   field: String,
-}
-
-#[derive(Clone)]
-struct TestSubOptions {
-  format: Format,
-  auto_ack: bool,
-}
-
-impl SubOptTrait for TestSubOptions {
-  fn get_auto_ack(&self) -> bool {
-    self.auto_ack
-  }
-
-  fn get_format(&self) -> Format {
-    self.format
-  }
 }
 
 fn unique_stream_name(format: Format) -> String {
@@ -59,10 +43,7 @@ async fn setup(format: Format) -> Option<(Pub<MyObj>, Sub<MyObj>)> {
       .block_time(500),
   ));
 
-  let options = Arc::new(TestSubOptions {
-    format,
-    auto_ack: true,
-  });
+  let options = SubOpt::new().format(format);
   let pub_typed = Pub::new(Arc::new(publisher), stream_name, format);
   let sub_typed = Sub::new(subscriber.clone(), subscriber.clone(), options);
   Some((pub_typed, sub_typed))

@@ -6,11 +6,10 @@ use futures::TryStreamExt;
 use futures::stream::BoxStream;
 use serde::de::DeserializeOwned;
 
-use crate::format::Format;
 use crate::errors::{SubError, UnSubError};
-use crate::traits::{
-  AckTrait, SubCtxTrait, SubOptTrait, SubTrait, UnSubTrait,
-};
+use crate::format::Format;
+use crate::options::SubOpt;
+use crate::traits::{AckTrait, SubCtxTrait, SubTrait, UnSubTrait};
 
 /// Subscriber wrapper that deserializes messages and optionally acknowledges
 /// them.
@@ -26,8 +25,9 @@ use crate::traits::{
 /// use futures::StreamExt;
 /// use serde::Deserialize;
 /// use object_transfer::{Format, Sub};
-/// use object_transfer::nats::{AckSubOptions, SubFetcher};
+/// use object_transfer::nats::{SubFetcherOpt, SubFetcher};
 /// use object_transfer::traits::{SubTrait, UnSubTrait};
+/// use object_transfer::SubOpt;
 ///
 /// #[derive(Deserialize, Debug)]
 /// struct Event {
@@ -41,18 +41,16 @@ use crate::traits::{
 ///   let client = async_nats::connect("demo.nats.io").await?;
 ///   let js = Arc::new(async_nats::jetstream::new(client));
 ///
-///   let options = Arc::new(
-///     AckSubOptions::new(Format::JSON, Arc::from("events"))
+///   let fetcher_option = SubFetcherOpt::new(Arc::from("events"))
 ///       .subjects(vec!["events.user_created"])
-///       .durable_name("user-created")
-///       .auto_ack(false),
-///   );
+///       .durable_name("user-created");
+///   let sub_option = SubOpt::new().format(Format::JSON);
 ///
 ///   // SubFetcher implements both SubCtxTrait and UnSubTrait.
-///   let fetcher = Arc::new(SubFetcher::new(js, options.clone()).await?);
+///   let fetcher = Arc::new(SubFetcher::new(js, fetcher_option).await?);
 ///   let unsub = fetcher.clone();
 ///
-///   let subscriber: Sub<Event> = Sub::new(fetcher, unsub, options);
+///   let subscriber: Sub<Event> = Sub::new(fetcher, unsub, sub_option);
 ///   let mut stream = subscriber.subscribe().await?;
 ///
 ///   while let Some(Ok((event, ack))) = stream.next().await {
@@ -67,7 +65,7 @@ use crate::traits::{
 pub struct Sub<T> {
   ctx: Arc<dyn SubCtxTrait + Send + Sync>,
   unsub: Arc<dyn UnSubTrait + Send + Sync>,
-  options: Arc<dyn SubOptTrait + Send + Sync>,
+  options: SubOpt,
   _marker: PhantomData<T>,
 }
 
@@ -85,7 +83,7 @@ where
   pub fn new(
     ctx: Arc<dyn SubCtxTrait + Send + Sync>,
     unsub: Arc<dyn UnSubTrait + Send + Sync>,
-    options: Arc<dyn SubOptTrait + Send + Sync>,
+    options: SubOpt,
   ) -> Self {
     Self {
       ctx,
@@ -113,10 +111,10 @@ where
   > {
     let messages = self.ctx.subscribe().await?;
     let stream = messages.and_then(async move |(msg, acker)| {
-      if self.options.get_auto_ack() {
+      if self.options.auto_ack {
         acker.ack().await?;
       }
-      let data = match self.options.get_format() {
+      let data = match self.options.format {
         Format::MessagePack => {
           rmp_serde::from_slice::<T>(&msg).map_err(SubError::MessagePackDecode)
         }
@@ -151,7 +149,7 @@ mod test {
   use crate::UnSubNoop;
   use crate::errors::AckError;
   use crate::tests::{entity::TestEntity, subscribe::SubscribeMock};
-  use crate::traits::{MockAckTrait, MockSubOptTrait};
+  use crate::traits::MockAckTrait;
 
   use super::*;
 
@@ -181,20 +179,9 @@ mod test {
       .collect();
     let ctx: Arc<dyn SubCtxTrait + Send + Sync> =
       Arc::new(SubscribeMock::new(data));
-    let mut options = MockSubOptTrait::new();
-    options
-      .expect_get_auto_ack()
-      .return_const(auto_ack)
-      .times(entities.len());
-    options
-      .expect_get_format()
-      .return_const(format)
-      .times(entities.len());
-    let subscribe: Sub<TestEntity> = Sub::new(
-      ctx,
-      Arc::new(UnSubNoop::new(false)),
-      Arc::new(options) as Arc<dyn SubOptTrait + Send + Sync>,
-    );
+    let options = SubOpt::new().auto_ack(auto_ack).format(format);
+    let subscribe: Sub<TestEntity> =
+      Sub::new(ctx, Arc::new(UnSubNoop::new(false)), options);
     let stream = subscribe.subscribe().await.unwrap();
     let obtained: Vec<TestEntity> = stream
       .try_collect::<Vec<_>>()
@@ -238,14 +225,9 @@ mod test {
     }));
     let ctx: Arc<dyn SubCtxTrait + Send + Sync> =
       Arc::new(SubscribeMock::new(data));
-    let mut options = MockSubOptTrait::new();
-    options.expect_get_auto_ack().return_const(true).once();
-    options.expect_get_format().return_const(format).never();
-    let subscribe: Sub<TestEntity> = Sub::new(
-      ctx,
-      Arc::new(UnSubNoop::new(false)),
-      Arc::new(options) as Arc<dyn SubOptTrait + Send + Sync>,
-    );
+    let options = SubOpt::new().auto_ack(true).format(format);
+    let subscribe: Sub<TestEntity> =
+      Sub::new(ctx, Arc::new(UnSubNoop::new(false)), options);
     let stream = subscribe.subscribe().await.unwrap();
     let obtained: Vec<String> = stream
       .collect::<Vec<_>>()

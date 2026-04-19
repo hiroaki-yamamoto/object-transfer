@@ -21,6 +21,7 @@ pub mod errors;
 pub mod format;
 #[cfg(feature = "nats")]
 pub mod nats;
+mod options;
 mod publisher;
 #[cfg(feature = "redis")]
 pub mod redis;
@@ -33,7 +34,8 @@ mod tests;
 
 pub use ack_noop::AckNoop;
 pub use format::Format;
+pub use options::SubOpt;
 pub use publisher::Pub;
 pub use subscriber::Sub;
-pub use traits::{PubTrait, SubOptTrait, SubTrait, UnSubTrait};
+pub use traits::{PubTrait, SubTrait, UnSubTrait};
 pub use unsub_noop::UnSubNoop;

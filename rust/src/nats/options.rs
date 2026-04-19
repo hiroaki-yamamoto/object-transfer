@@ -4,31 +4,25 @@ use ::async_nats::jetstream::{
   consumer::pull::Config as PullConfig, stream::Config as StreamConfig,
 };
 
-use crate::format::Format;
-use crate::traits::SubOptTrait;
-
 /// Configuration options for creating an acknowledgment-based subscriber.
 ///
 /// This struct provides a builder pattern for configuring NATS JetStream
 /// consumers with pull-based message consumption and automatic acknowledgment options.
-#[derive(Debug)]
-pub struct AckSubOptions {
+#[derive(Debug, Clone)]
+pub struct SubFetcherOpt {
   pub(super) stream_cfg: StreamConfig,
   pub(super) pull_cfg: PullConfig,
-  pub(super) auto_ack: bool,
-  pub(super) format: Format,
 }
 
-impl AckSubOptions {
-  /// Creates a new `AckSubOptions` with the specified format and name.
+impl SubFetcherOpt {
+  /// Creates a new `SubFetcherOpt` with the specified format and name.
   ///
   /// # Arguments
-  /// * `format` - The message format to use for serialization/deserialization
   /// * `name` - The name for both the stream and consumer
   ///
   /// # Returns
-  /// A new `AckSubOptions` instance with default settings and auto-acknowledgment enabled
-  pub fn new(format: Format, name: Arc<str>) -> Self {
+  /// A new `SubFetcherOpt` instance with default settings and auto-acknowledgment enabled
+  pub fn new(name: Arc<str>) -> Self {
     Self {
       stream_cfg: StreamConfig {
         name: name.clone().to_string(),
@@ -38,21 +32,7 @@ impl AckSubOptions {
         name: Some(name.clone().to_string()),
         ..PullConfig::default()
       },
-      auto_ack: true,
-      format,
     }
-  }
-
-  /// Sets whether messages should be automatically acknowledged.
-  ///
-  /// # Arguments
-  /// * `auto_ack` - If true, messages will be automatically acknowledged after processing
-  ///
-  /// # Returns
-  /// Self for method chaining
-  pub fn auto_ack(mut self, auto_ack: bool) -> Self {
-    self.auto_ack = auto_ack;
-    self
   }
 
   /// Sets the stream name.
@@ -94,18 +74,6 @@ impl AckSubOptions {
     self
   }
 
-  /// Sets the message format for serialization/deserialization.
-  ///
-  /// # Arguments
-  /// * `format` - The format to use for message encoding
-  ///
-  /// # Returns
-  /// Self for method chaining
-  pub fn format(mut self, format: Format) -> Self {
-    self.format = format;
-    self
-  }
-
   /// Sets the complete stream configuration.
   ///
   /// This replaces the entire stream configuration with the provided one.
@@ -132,14 +100,5 @@ impl AckSubOptions {
   pub fn pull_config(mut self, pull_cfg: PullConfig) -> Self {
     self.pull_cfg = pull_cfg;
     self
-  }
-}
-
-impl SubOptTrait for AckSubOptions {
-  fn get_auto_ack(&self) -> bool {
-    self.auto_ack
-  }
-  fn get_format(&self) -> Format {
-    self.format
   }
 }

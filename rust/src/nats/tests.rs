@@ -3,7 +3,8 @@ use ::std::sync::Arc;
 use futures::StreamExt;
 use serde::{Deserialize, Serialize};
 
-use crate::nats::{AckSubOptions, SubFetcher};
+use crate::nats::{SubFetcher, SubFetcherOpt};
+use crate::options::SubOpt;
 use crate::{Format, Pub, PubTrait, Sub, SubTrait, UnSubTrait};
 use async_nats::jetstream::{
   consumer::pull::Config as PullConfig, stream::Config as StreamConfig,
@@ -27,21 +28,19 @@ async fn setup(format: Format) -> Option<(Pub<MyObj>, Sub<MyObj>)> {
   let name: Arc<str> =
     Arc::from(format!("object_transfer_{}", format.to_string()).as_str());
   let publisher = Pub::new(js.clone(), name.to_string(), format);
-  let options = Arc::new(
-    AckSubOptions::new(format, name.clone())
-      .stream_config(StreamConfig {
-        name: name.to_string(),
-        subjects: vec![name.to_string()],
-        ..Default::default()
-      })
-      .pull_config(PullConfig {
-        durable_name: Some(name.to_string()),
-        ..Default::default()
-      }),
-  );
-  let subfetcher =
-    Arc::new(SubFetcher::new(js, options.clone()).await.unwrap());
-  let reader = Sub::new(subfetcher.clone(), subfetcher, options);
+  let ack_option = SubFetcherOpt::new(name.clone())
+    .stream_config(StreamConfig {
+      name: name.to_string(),
+      subjects: vec![name.to_string()],
+      ..Default::default()
+    })
+    .pull_config(PullConfig {
+      durable_name: Some(name.to_string()),
+      ..Default::default()
+    });
+  let sub_option = SubOpt::new().format(format);
+  let subfetcher = Arc::new(SubFetcher::new(js, ack_option).await.unwrap());
+  let reader = Sub::new(subfetcher.clone(), subfetcher, sub_option);
   Some((publisher, reader))
 }
 

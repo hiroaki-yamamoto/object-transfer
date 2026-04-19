@@ -12,5 +12,5 @@ mod sub_fetcher;
 mod tests;
 
 pub use errors::NatsSubFetcherError;
-pub use options::AckSubOptions;
+pub use options::SubFetcherOpt;
 pub use sub_fetcher::SubFetcher;

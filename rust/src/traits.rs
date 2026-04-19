@@ -168,7 +168,6 @@ use ::futures::stream::BoxStream;
 use ::serde::{Serialize, de::DeserializeOwned};
 
 use crate::errors::{AckError, PubError, SubError, UnSubError};
-use crate::format::Format;
 
 #[cfg(test)]
 use crate::tests::entity::TestEntity;
@@ -239,13 +238,6 @@ pub trait SubCtxTrait {
   >;
 }
 
-/// Options that influence subscription behavior such as auto-ack and format.
-#[cfg_attr(test, automock)]
-pub trait SubOptTrait {
-  fn get_auto_ack(&self) -> bool;
-  fn get_format(&self) -> Format;
-}
-
 #[cfg(test)]
 mod test {
   use ::static_assertions::assert_obj_safe;
@@ -279,10 +271,5 @@ mod test {
   #[test]
   fn test_subctx_safety() {
     assert_obj_safe!(SubCtxTrait);
-  }
-
-  #[test]
-  fn test_subopt_safety() {
-    assert_obj_safe!(SubOptTrait);
   }
 }

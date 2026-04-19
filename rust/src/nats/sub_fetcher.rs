@@ -7,7 +7,7 @@ use ::futures::stream::BoxStream;
 use ::futures::{StreamExt, TryFutureExt};
 
 use super::errors::NatsSubFetcherError;
-use super::options::AckSubOptions;
+use super::options::SubFetcherOpt;
 use crate::errors::{SubError, UnSubError};
 use crate::traits::{AckTrait, SubCtxTrait, UnSubTrait};
 
@@ -15,7 +15,7 @@ use crate::traits::{AckTrait, SubCtxTrait, UnSubTrait};
 #[derive(Debug)]
 pub struct SubFetcher {
   stream: JStream,
-  options: Arc<AckSubOptions>,
+  options: SubFetcherOpt,
 }
 
 impl SubFetcher {
@@ -26,7 +26,7 @@ impl SubFetcher {
   /// - `options`: Configuration for the stream and durable pull consumer.
   pub async fn new(
     ctx: Arc<Context>,
-    options: Arc<AckSubOptions>,
+    options: SubFetcherOpt,
   ) -> Result<Self, NatsSubFetcherError> {
     let stream = ctx.get_or_create_stream(options.stream_cfg.clone()).await?;
     Ok(Self { stream, options })
