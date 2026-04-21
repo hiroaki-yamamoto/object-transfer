@@ -165,27 +165,17 @@ impl<T: DeserializeOwned + Send + Sync> Decoder for JSONDecoder<T> {
 
 #[cfg(test)]
 mod test {
-  use super::*;
   use ::serde::{Deserialize, Serialize};
 
-  #[derive(Debug, Serialize, Deserialize, PartialEq)]
-  struct TestData {
-    id: u32,
-    name: String,
-    active: bool,
-  }
+  use crate::tests::entity::TestEntity;
+
+  use super::*;
 
   #[test]
   fn test_json_encoder_basic() {
-    let encoder = JSONEncoder::<TestData> {
-      _marker: PhantomData,
-    };
+    let encoder = JSONEncoder::new();
 
-    let data = TestData {
-      id: 1,
-      name: "test".to_string(),
-      active: true,
-    };
+    let data = TestEntity::new(1, "test");
 
     let result = encoder.encode(&data);
     assert!(result.is_ok());
@@ -196,42 +186,32 @@ mod test {
 
   #[test]
   fn test_json_decoder_basic() {
-    let decoder = JSONDecoder::<TestData> {
-      _marker: PhantomData,
-    };
+    let decoder = JSONDecoder::new();
 
-    let json = br#"{"id":42,"name":"example","active":false}"#;
+    let json = br#"{"id":42,"name":"example"}"#;
     let bytes = Bytes::copy_from_slice(json);
 
     let result = decoder.decode(bytes);
     assert!(result.is_ok());
 
-    let data = result.unwrap();
+    let data: TestEntity = result.unwrap();
     assert_eq!(data.id, 42);
     assert_eq!(data.name, "example");
-    assert!(!data.active);
   }
 
   #[test]
   fn test_encode_decode_roundtrip() {
-    let encoder = JSONEncoder::<TestData> {
-      _marker: PhantomData,
-    };
-    let decoder = JSONDecoder::<TestData> {
-      _marker: PhantomData,
-    };
+    let encoder = JSONEncoder::new();
+    let decoder = JSONDecoder::new();
 
-    let original = TestData {
-      id: 123,
-      name: "roundtrip_test".to_string(),
-      active: true,
-    };
+    let original = TestEntity::new(123, "roundtrip_test");
 
     // Encode
     let encoded = encoder.encode(&original).expect("encoding failed");
 
     // Decode
-    let decoded = decoder.decode(encoded).expect("decoding failed");
+    let decoded: TestEntity =
+      decoder.decode(encoded).expect("decoding failed");
 
     // Verify equality
     assert_eq!(decoded, original);
@@ -249,7 +229,7 @@ mod test {
 
   #[test]
   fn test_json_decoder_invalid_json() {
-    let decoder = JSONDecoder::<TestData> {
+    let decoder = JSONDecoder::<TestEntity> {
       _marker: PhantomData,
     };
 
@@ -261,11 +241,11 @@ mod test {
 
   #[test]
   fn test_json_decoder_type_mismatch() {
-    let decoder = JSONDecoder::<TestData> {
+    let decoder = JSONDecoder::<TestEntity> {
       _marker: PhantomData,
     };
 
-    let json = br#"{"id":"not_a_number","name":"test","active":true}"#;
+    let json = br#"{"id":"not_a_number","name":"test"}"#;
     let bytes = Bytes::copy_from_slice(json);
 
     let result = decoder.decode(bytes);
@@ -276,7 +256,7 @@ mod test {
   fn test_encode_decode_with_nested_structure() {
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
     struct Nested {
-      data: TestData,
+      data: TestEntity,
       metadata: String,
     }
 
@@ -288,11 +268,7 @@ mod test {
     };
 
     let original = Nested {
-      data: TestData {
-        id: 999,
-        name: "nested".to_string(),
-        active: false,
-      },
+      data: TestEntity::new(999, "nested"),
       metadata: "test metadata".to_string(),
     };
 
