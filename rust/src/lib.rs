@@ -20,7 +20,6 @@ mod ack_noop;
 pub mod encoder;
 pub mod errors;
 pub mod format;
-pub mod format_fn;
 #[cfg(feature = "nats")]
 pub mod nats;
 mod options;
