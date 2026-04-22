@@ -112,16 +112,16 @@ mod tests {
 
   use crate::encoder::MockEncoder;
   use crate::errors::BrokerError;
-  use crate::format::Format;
   use crate::tests::entity::TestEntity;
   use crate::tests::error::MockBrokerErr;
   use crate::traits::MockPubCtxTrait;
 
   use super::*;
 
-  async fn test_publish(format: Format) {
-    let entity = TestEntity::new(1, &format!("Test Name: {:?}", format));
-    let subject = &format!("test.subject.{:?}", format);
+  #[tokio::test]
+  async fn test_publish() {
+    let entity = TestEntity::new(1, "Test Name");
+    let subject = "test.subject";
     let correct = Bytes::from("serialized bytes");
     let mut ctx = MockPubCtxTrait::new();
     ctx
@@ -139,16 +139,6 @@ mod tests {
       Pub::new(Arc::new(ctx), subject, Arc::new(encoder));
     let res = publisher.publish(&entity).await;
     assert!(res.is_ok());
-  }
-
-  #[tokio::test]
-  async fn test_publish_json() {
-    test_publish(Format::JSON).await;
-  }
-
-  #[tokio::test]
-  async fn test_publish_msgpack() {
-    test_publish(Format::MessagePack).await;
   }
 
   #[tokio::test]

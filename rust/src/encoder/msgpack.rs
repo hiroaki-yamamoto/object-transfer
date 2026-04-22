@@ -9,6 +9,7 @@ use ::serde::{de::DeserializeOwned, ser::Serialize};
 
 use super::traits::{Decoder, Encoder};
 
+#[derive(Debug)]
 pub struct MessagePackEncoder<T: Serialize + Send + Sync> {
   _marker: PhantomData<T>,
 }
@@ -30,6 +31,7 @@ impl<T: Serialize + Send + Sync> Encoder for MessagePackEncoder<T> {
   }
 }
 
+#[derive(Debug)]
 pub struct MessagePackDecoder<T: DeserializeOwned + Send + Sync> {
   _marker: PhantomData<T>,
 }

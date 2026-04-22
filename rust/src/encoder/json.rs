@@ -1,37 +1,3 @@
-//! JSON encoding and decoding for serializable types.
-//!
-//! This module provides generic implementations for encoding Rust types into JSON format
-//! and decoding JSON data back into Rust types. Both implementations use `serde_json` for
-//! serialization and deserialization.
-//!
-//! # Types
-//!
-//! - [`JSONEncoder`]: Encodes items into JSON byte sequences. Implements [`Encoder`].
-//! - [`JSONDecoder`]: Decodes JSON byte sequences into items. Implements [`Decoder`].
-//!
-//! # Example
-//!
-//! ```
-//! use serde::{Serialize, Deserialize};
-//! use object_transfer::encoder::{JSONEncoder, JSONDecoder, Encoder, Decoder};
-//!
-//! #[derive(Serialize, Deserialize)]
-//! struct Message {
-//!     id: u32,
-//!     content: String,
-//! }
-//!
-//! fn example() {
-//!   let encoder = JSONEncoder::new();
-//!   let message = Message { id: 1, content: "Hello".to_string() };
-//!   let bytes = encoder.encode(&message).expect("Failed to encode");
-//!
-//!   let decoder = JSONDecoder::new();
-//!   let decoded: Message = decoder.decode(bytes).expect("Failed to decode");
-//!   assert_eq!(decoded.id, 1);
-//! }
-//! ```
-
 use ::std::marker::PhantomData;
 
 use ::bytes::Bytes;
@@ -76,6 +42,7 @@ use super::traits::{Decoder, Encoder};
 ///
 /// Encoding fails if serialization encounters an error, such as when the type contains
 /// non-serializable fields or when the encoder runs out of memory.
+#[derive(Debug)]
 pub struct JSONEncoder<T: Serialize + Send + Sync> {
   _marker: PhantomData<T>,
 }
@@ -137,6 +104,7 @@ impl<T: Serialize + Send + Sync> Encoder for JSONEncoder<T> {
 /// - Invalid JSON syntax in the payload
 /// - Type mismatch between the JSON structure and the target type `T`
 /// - Missing or extra fields not matching the target type's requirements
+#[derive(Debug)]
 pub struct JSONDecoder<T: DeserializeOwned + Send + Sync> {
   _marker: PhantomData<T>,
 }

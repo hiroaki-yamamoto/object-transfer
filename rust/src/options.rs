@@ -4,20 +4,16 @@
 //! It allows control over automatic acknowledgment handling and message format
 //! selection for subscription operations.
 
-use crate::format::Format;
+use ::core::fmt::Debug;
 
 #[derive(Debug, Clone)]
 pub struct SubOpt {
   pub(crate) auto_ack: bool,
-  pub(crate) format: Format,
 }
 
 impl Default for SubOpt {
   fn default() -> Self {
-    Self {
-      auto_ack: true,
-      format: Format::JSON,
-    }
+    Self { auto_ack: true }
   }
 }
 
@@ -39,18 +35,6 @@ impl SubOpt {
   /// The updated `SubOpt` instance
   pub fn auto_ack(mut self, auto_ack: bool) -> Self {
     self.auto_ack = auto_ack;
-    self
-  }
-
-  /// Sets the message format for serialization/deserialization.
-  ///
-  /// # Arguments
-  /// * `format` - The message format to use
-  ///
-  /// # Returns
-  /// The updated `SubOpt` instance
-  pub fn format(mut self, format: Format) -> Self {
-    self.format = format;
     self
   }
 }
