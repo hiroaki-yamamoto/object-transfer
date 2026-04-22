@@ -5,8 +5,10 @@ use ::bytes::Bytes;
 use ::futures::stream::{BoxStream, StreamExt, iter};
 use ::serde::de::DeserializeOwned;
 
-use crate::errors::SubError;
+use crate::errors::{BrokerError, SubError};
 use crate::traits::{AckTrait, SubCtxTrait, SubTrait};
+
+use super::error::MockDeErr;
 
 pub struct SubscribeMock<Entity> {
   data: Vec<(Entity, Arc<dyn AckTrait + Send + Sync>)>,
@@ -24,12 +26,18 @@ where
   Entity: DeserializeOwned + Clone + Send + Sync,
 {
   type Item = Entity;
+  type DecodeErr = MockDeErr;
 
   async fn subscribe(
     &self,
   ) -> Result<
-    BoxStream<Result<(Self::Item, Arc<dyn AckTrait + Send + Sync>), SubError>>,
-    SubError,
+    BoxStream<
+      Result<
+        (Self::Item, Arc<dyn AckTrait + Send + Sync>),
+        SubError<Self::DecodeErr>,
+      >,
+    >,
+    SubError<Self::DecodeErr>,
   > {
     Ok(iter(self.data.clone()).map(|item| Ok(item)).boxed())
   }
@@ -40,8 +48,8 @@ impl SubCtxTrait for SubscribeMock<Bytes> {
   async fn subscribe(
     &self,
   ) -> Result<
-    BoxStream<Result<(Bytes, Arc<dyn AckTrait + Send + Sync>), SubError>>,
-    SubError,
+    BoxStream<Result<(Bytes, Arc<dyn AckTrait + Send + Sync>), BrokerError>>,
+    BrokerError,
   > {
     Ok(iter(self.data.clone()).map(|item| Ok(item)).boxed())
   }

@@ -36,7 +36,7 @@ use ::std::marker::PhantomData;
 
 use ::bytes::Bytes;
 use ::serde::{de::DeserializeOwned, ser::Serialize};
-use ::serde_json::{Error as JSErr, to_vec};
+use ::serde_json::{Error as JSErr, from_slice, to_vec};
 
 use super::traits::{Decoder, Encoder};
 
@@ -93,10 +93,7 @@ impl<T: Serialize + Send + Sync> Encoder for JSONEncoder<T> {
   type Item = T;
   type Error = JSErr;
 
-  fn encode(
-    &self,
-    item: &Self::Item,
-  ) -> Result<bytes::Bytes, Box<Self::Error>> {
+  fn encode(&self, item: &Self::Item) -> Result<bytes::Bytes, Self::Error> {
     let payload = to_vec(item)?;
     Ok(Bytes::from(payload))
   }
@@ -157,8 +154,8 @@ impl<T: DeserializeOwned + Send + Sync> Decoder for JSONDecoder<T> {
   type Item = T;
   type Error = JSErr;
 
-  fn decode(&self, payload: Bytes) -> Result<Self::Item, Box<Self::Error>> {
-    let item = serde_json::from_slice(&payload)?;
+  fn decode(&self, payload: Bytes) -> Result<Self::Item, Self::Error> {
+    let item = from_slice(&payload)?;
     Ok(item)
   }
 }

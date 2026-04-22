@@ -3,9 +3,10 @@ use ::std::sync::Arc;
 
 use async_trait::async_trait;
 use serde::Serialize;
+use serde::ser::Error as EncErr;
 
-use crate::format::Format;
-use crate::errors::PubError;
+use crate::encoder::Encoder;
+use crate::errors::{EncodeError, PubError};
 use crate::traits::{PubCtxTrait, PubTrait};
 
 /// Publisher for serializable messages using a pluggable context.
@@ -49,16 +50,17 @@ use crate::traits::{PubCtxTrait, PubTrait};
 ///   Ok(())
 /// }
 /// ```
-pub struct Pub<T> {
+pub struct Pub<T, SerErr: EncErr + Send + Sync> {
   ctx: Arc<dyn PubCtxTrait + Send + Sync>,
   subject: String,
-  format: Format,
+  encoder: Arc<dyn Encoder<Item = T, Error = SerErr> + Send + Sync>,
   _phantom: PhantomData<T>,
 }
 
-impl<T> Pub<T>
+impl<T, SerErr> Pub<T, SerErr>
 where
   T: Serialize + Send + Sync,
+  SerErr: EncErr + Send + Sync,
 {
   /// Creates a new publisher for the given subject and serialization format.
   ///
@@ -69,35 +71,32 @@ where
   pub fn new(
     ctx: Arc<dyn PubCtxTrait + Send + Sync>,
     subject: impl Into<String>,
-    format: Format,
+    encoder: Arc<dyn Encoder<Item = T, Error = SerErr> + Send + Sync>,
   ) -> Self {
     Self {
       ctx,
       subject: subject.into(),
-      format,
+      encoder,
       _phantom: PhantomData,
     }
   }
 }
 
 #[async_trait]
-impl<T> PubTrait for Pub<T>
+impl<T, SerErr> PubTrait for Pub<T, SerErr>
 where
   T: Serialize + Send + Sync,
+  SerErr: EncErr + Send + Sync,
 {
   type Item = T;
+  type EncodeErr = SerErr;
   /// Serializes the provided object and publishes it to the configured
   /// subject using the underlying context.
   ///
   /// # Parameters
   /// - `obj`: The typed value to encode and send to the subject.
-  async fn publish(&self, obj: &T) -> Result<(), PubError> {
-    let payload = match self.format {
-      Format::MessagePack => {
-        rmp_serde::to_vec(obj).map_err(PubError::MessagePackEncode)?
-      }
-      Format::JSON => serde_json::to_vec(obj).map_err(PubError::Json)?,
-    };
+  async fn publish(&self, obj: &T) -> Result<(), PubError<Self::EncodeErr>> {
+    let payload = self.encoder.encode(obj).map_err(|e| EncodeError::new(e))?;
     self
       .ctx
       .publish(self.subject.as_str(), payload.into())
@@ -110,11 +109,12 @@ where
 mod tests {
   use ::bytes::Bytes;
   use ::mockall::predicate::*;
-  use ::rmp_serde::to_vec as to_msgpack;
-  use ::serde_json::to_vec as jsonify;
 
+  use crate::encoder::MockEncoder;
+  use crate::errors::BrokerError;
   use crate::format::Format;
   use crate::tests::entity::TestEntity;
+  use crate::tests::error::MockBrokerErr;
   use crate::traits::MockPubCtxTrait;
 
   use super::*;
@@ -122,17 +122,21 @@ mod tests {
   async fn test_publish(format: Format) {
     let entity = TestEntity::new(1, &format!("Test Name: {:?}", format));
     let subject = &format!("test.subject.{:?}", format);
-    let correct = Bytes::from(match format {
-      Format::MessagePack => to_msgpack(&entity).unwrap(),
-      Format::JSON => jsonify(&entity).unwrap(),
-    });
+    let correct = Bytes::from("serialized bytes");
     let mut ctx = MockPubCtxTrait::new();
     ctx
       .expect_publish()
-      .with(eq(subject.clone()), eq(correct))
+      .with(eq(subject.clone()), eq(correct.clone()))
       .times(1)
       .returning(|_, _| Ok(()));
-    let publisher: Pub<TestEntity> = Pub::new(Arc::new(ctx), subject, format);
+    let mut encoder = MockEncoder::new();
+    encoder
+      .expect_encode()
+      .with(eq(entity.clone()))
+      .times(1)
+      .returning(move |_| Ok(correct.clone()));
+    let publisher: Pub<TestEntity, _> =
+      Pub::new(Arc::new(ctx), subject, Arc::new(encoder));
     let res = publisher.publish(&entity).await;
     assert!(res.is_ok());
   }
@@ -151,16 +155,23 @@ mod tests {
   async fn test_publish_error() {
     let entity = TestEntity::new(1, "Test Name");
     let subject = "test.subject.error";
+    let correct = Bytes::from("serialized bytes");
     let mut ctx = MockPubCtxTrait::new();
     ctx
       .expect_publish()
-      .withf(move |subj, _| subj == subject)
+      .with(eq(subject.clone()), eq(correct.clone()))
       .times(1)
-      .returning(|_, _| Err(PubError::ErrorTest));
-    let publisher: Pub<TestEntity> =
-      Pub::new(Arc::new(ctx), subject, Format::JSON);
+      .returning(|_, _| Err(BrokerError::new(MockBrokerErr)));
+    let mut encoder = MockEncoder::new();
+    encoder
+      .expect_encode()
+      .with(eq(entity.clone()))
+      .times(1)
+      .returning(move |_| Ok(correct.clone()));
+    let publisher: Pub<TestEntity, _> =
+      Pub::new(Arc::new(ctx), subject, Arc::new(encoder));
     let res = publisher.publish(&entity).await;
     let err_msg = res.unwrap_err().to_string();
-    assert_eq!(err_msg, PubError::ErrorTest.to_string());
+    assert_eq!(err_msg, MockBrokerErr {}.to_string());
   }
 }

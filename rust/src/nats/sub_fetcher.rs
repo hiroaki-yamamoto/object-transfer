@@ -8,7 +8,7 @@ use ::futures::{StreamExt, TryFutureExt};
 
 use super::errors::NatsSubFetcherError;
 use super::options::SubFetcherOpt;
-use crate::errors::{SubError, UnSubError};
+use crate::errors::{BrokerError, SubError, UnSubError};
 use crate::traits::{AckTrait, SubCtxTrait, UnSubTrait};
 
 /// Fetches pull-based JetStream messages using the configured stream options.
@@ -40,7 +40,7 @@ impl SubCtxTrait for SubFetcher {
   async fn subscribe(
     &self,
   ) -> Result<
-    BoxStream<Result<(Bytes, Arc<dyn AckTrait + Send + Sync>), SubError>>,
+    BoxStream<Result<(Bytes, Arc<dyn AckTrait + Send + Sync>), BrokerError>>,
     SubError,
   > {
     let consumer = self

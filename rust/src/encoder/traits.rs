@@ -12,8 +12,19 @@
 //! They require associated types to implement `Send + Sync` for thread-safe usage.
 
 use ::bytes::Bytes;
-use ::serde::{de::DeserializeOwned, ser::Serialize};
-use ::std::error::Error;
+use ::serde::{
+  de::{DeserializeOwned, Error as DecodeErr},
+  ser::{Error as EncodeErr, Serialize},
+};
+
+#[cfg(test)]
+use ::mockall::automock;
+
+#[cfg(test)]
+use crate::tests::{
+  entity::TestEntity,
+  error::{MockDeErr, MockEncErr},
+};
 
 /// A trait for encoding items into byte sequences.
 ///
@@ -60,10 +71,11 @@ use ::std::error::Error;
 ///     }
 /// }
 /// ```
+#[cfg_attr(test, automock(type Item = TestEntity; type Error = MockEncErr;))]
 pub trait Encoder {
   type Item: Serialize + Send + Sync;
-  type Error: Error + Send + Sync;
-  fn encode(&self, item: &Self::Item) -> Result<Bytes, Box<Self::Error>>;
+  type Error: EncodeErr + Send + Sync;
+  fn encode(&self, item: &Self::Item) -> Result<Bytes, Self::Error>;
 }
 
 /// A trait for decoding byte sequences back into items.
@@ -112,26 +124,27 @@ pub trait Encoder {
 ///     }
 /// }
 /// ```
+
+#[cfg_attr(test, automock(type Item = TestEntity; type Error = MockDeErr;))]
 pub trait Decoder {
   type Item: DeserializeOwned + Send + Sync;
-  type Error: Error + Send + Sync;
-  fn decode(&self, data: Bytes) -> Result<Self::Item, Box<Self::Error>>;
+  type Error: DecodeErr + Send + Sync;
+  fn decode(&self, data: Bytes) -> Result<Self::Item, Self::Error>;
 }
 
 #[cfg(test)]
 mod test {
   use ::static_assertions::assert_obj_safe;
-  use ::std::io::Error as IoError;
 
   use super::*;
   use crate::tests::entity::TestEntity;
   #[test]
   fn test_encoder_safety() {
-    assert_obj_safe!(Encoder<Item = TestEntity, Error = IoError>);
+    assert_obj_safe!(Encoder<Item = TestEntity, Error = MockEncErr>);
   }
 
   #[test]
   fn test_decoder_safety() {
-    assert_obj_safe!(Decoder<Item = TestEntity, Error = IoError>);
+    assert_obj_safe!(Decoder<Item = TestEntity, Error = MockDeErr>);
   }
 }
