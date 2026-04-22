@@ -19,7 +19,8 @@
 mod ack_noop;
 pub mod encoder;
 pub mod errors;
-pub mod format;
+#[cfg(test)]
+pub(crate) mod format;
 #[cfg(feature = "nats")]
 pub mod nats;
 mod options;
@@ -34,9 +35,11 @@ mod unsub_noop;
 mod tests;
 
 pub use ack_noop::AckNoop;
-pub use format::Format;
 pub use options::SubOpt;
 pub use publisher::Pub;
 pub use subscriber::Sub;
 pub use traits::{PubTrait, SubTrait, UnSubTrait};
 pub use unsub_noop::UnSubNoop;
+
+#[cfg(test)]
+pub(crate) use format::Format;

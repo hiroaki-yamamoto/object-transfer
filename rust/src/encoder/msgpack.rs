@@ -7,14 +7,14 @@ use ::rmp_serde::{
 };
 use ::serde::{de::DeserializeOwned, ser::Serialize};
 
-use super::traits::{Decoder, Encoder};
+use super::traits::{Decoder as DecoderTrait, Encoder as EncoderTrait};
 
 #[derive(Debug)]
-pub struct MessagePackEncoder<T: Serialize + Send + Sync> {
+pub struct Encoder<T: Serialize + Send + Sync> {
   _marker: PhantomData<T>,
 }
 
-impl<T: Serialize + Send + Sync> MessagePackEncoder<T> {
+impl<T: Serialize + Send + Sync> Encoder<T> {
   pub fn new() -> Self {
     Self {
       _marker: PhantomData,
@@ -22,7 +22,7 @@ impl<T: Serialize + Send + Sync> MessagePackEncoder<T> {
   }
 }
 
-impl<T: Serialize + Send + Sync> Encoder for MessagePackEncoder<T> {
+impl<T: Serialize + Send + Sync> EncoderTrait for Encoder<T> {
   type Item = T;
   type Error = EncodeError;
 
@@ -32,11 +32,11 @@ impl<T: Serialize + Send + Sync> Encoder for MessagePackEncoder<T> {
 }
 
 #[derive(Debug)]
-pub struct MessagePackDecoder<T: DeserializeOwned + Send + Sync> {
+pub struct Decoder<T: DeserializeOwned + Send + Sync> {
   _marker: PhantomData<T>,
 }
 
-impl<T: DeserializeOwned + Send + Sync> MessagePackDecoder<T> {
+impl<T: DeserializeOwned + Send + Sync> Decoder<T> {
   pub fn new() -> Self {
     Self {
       _marker: PhantomData,
@@ -44,7 +44,7 @@ impl<T: DeserializeOwned + Send + Sync> MessagePackDecoder<T> {
   }
 }
 
-impl<T: DeserializeOwned + Send + Sync> Decoder for MessagePackDecoder<T> {
+impl<T: DeserializeOwned + Send + Sync> DecoderTrait for Decoder<T> {
   type Item = T;
   type Error = DecodeError;
 

@@ -6,11 +6,13 @@ pub use self::traits::{Decoder, Encoder};
 pub use self::traits::{MockDecoder, MockEncoder};
 
 #[cfg(feature = "json")]
-mod json;
+pub mod json;
 #[cfg(feature = "json")]
-pub use self::json::{JSONDecoder, JSONEncoder};
+pub use self::json::{Decoder as JSONDecoder, Encoder as JSONEncoder};
 
 #[cfg(feature = "msgpack")]
-mod msgpack;
+pub mod msgpack;
 #[cfg(feature = "msgpack")]
-pub use self::msgpack::{MessagePackDecoder, MessagePackEncoder};
+pub use self::msgpack::{
+  Decoder as MessagePackDecoder, Encoder as MessagePackEncoder,
+};

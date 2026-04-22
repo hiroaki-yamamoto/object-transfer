@@ -13,7 +13,7 @@ use ::redis::streams::{
   StreamReadReply,
 };
 
-use crate::errors::{BrokerError, SubError, UnSubError};
+use crate::errors::{BrokerError, UnSubError};
 use crate::traits::{AckTrait, SubCtxTrait, UnSubTrait};
 
 use super::ack::Ack;
@@ -115,8 +115,8 @@ impl SubCtxTrait for Subscriber {
   async fn subscribe(
     &self,
   ) -> Result<
-    BoxStream<Result<(Bytes, Arc<dyn AckTrait + Send + Sync>), SubError>>,
-    SubError,
+    BoxStream<Result<(Bytes, Arc<dyn AckTrait + Send + Sync>), BrokerError>>,
+    BrokerError,
   > {
     let con = self.con.clone();
     let cfg = &self.cfg;

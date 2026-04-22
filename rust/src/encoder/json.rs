@@ -4,7 +4,7 @@ use ::bytes::Bytes;
 use ::serde::{de::DeserializeOwned, ser::Serialize};
 use ::serde_json::{Error as JSErr, from_slice, to_vec};
 
-use super::traits::{Decoder, Encoder};
+use super::traits::{Decoder as DecoderTrait, Encoder as EncoderTrait};
 
 /// Encodes items into JSON byte sequences.
 ///
@@ -19,7 +19,7 @@ use super::traits::{Decoder, Encoder};
 ///
 /// ```
 /// use serde::Serialize;
-/// use object_transfer::encoder::{JSONEncoder, Encoder};
+/// use object_transfer::encoder::{Encoder, JSONEncoder};
 ///
 /// #[derive(Serialize)]
 /// struct User {
@@ -28,7 +28,7 @@ use super::traits::{Decoder, Encoder};
 /// }
 ///
 /// fn example() {
-///   let encoder = JSONEncoder::new();
+///   let encoder = Encoder::new();
 ///   let user = User {
 ///       id: 42,
 ///       name: "Alice".to_string(),
@@ -43,12 +43,12 @@ use super::traits::{Decoder, Encoder};
 /// Encoding fails if serialization encounters an error, such as when the type contains
 /// non-serializable fields or when the encoder runs out of memory.
 #[derive(Debug)]
-pub struct JSONEncoder<T: Serialize + Send + Sync> {
+pub struct Encoder<T: Serialize + Send + Sync> {
   _marker: PhantomData<T>,
 }
 
-impl<T: Serialize + Send + Sync> JSONEncoder<T> {
-  /// Creates a new instance of `JSONEncoder`.
+impl<T: Serialize + Send + Sync> Encoder<T> {
+  /// Creates a new instance of `Encoder`.
   pub fn new() -> Self {
     Self {
       _marker: PhantomData,
@@ -56,7 +56,7 @@ impl<T: Serialize + Send + Sync> JSONEncoder<T> {
   }
 }
 
-impl<T: Serialize + Send + Sync> Encoder for JSONEncoder<T> {
+impl<T: Serialize + Send + Sync> EncoderTrait for Encoder<T> {
   type Item = T;
   type Error = JSErr;
 
@@ -105,12 +105,12 @@ impl<T: Serialize + Send + Sync> Encoder for JSONEncoder<T> {
 /// - Type mismatch between the JSON structure and the target type `T`
 /// - Missing or extra fields not matching the target type's requirements
 #[derive(Debug)]
-pub struct JSONDecoder<T: DeserializeOwned + Send + Sync> {
+pub struct Decoder<T: DeserializeOwned + Send + Sync> {
   _marker: PhantomData<T>,
 }
 
-impl<T: DeserializeOwned + Send + Sync> JSONDecoder<T> {
-  /// Creates a new instance of `JSONDecoder`.
+impl<T: DeserializeOwned + Send + Sync> Decoder<T> {
+  /// Creates a new instance of `Decoder`.
   pub fn new() -> Self {
     Self {
       _marker: PhantomData,
@@ -118,7 +118,7 @@ impl<T: DeserializeOwned + Send + Sync> JSONDecoder<T> {
   }
 }
 
-impl<T: DeserializeOwned + Send + Sync> Decoder for JSONDecoder<T> {
+impl<T: DeserializeOwned + Send + Sync> DecoderTrait for Decoder<T> {
   type Item = T;
   type Error = JSErr;
 
@@ -138,7 +138,7 @@ mod test {
 
   #[test]
   fn test_json_encoder_basic() {
-    let encoder = JSONEncoder::new();
+    let encoder = Encoder::new();
 
     let data = TestEntity::new(1, "test");
 
@@ -151,7 +151,7 @@ mod test {
 
   #[test]
   fn test_json_decoder_basic() {
-    let decoder = JSONDecoder::new();
+    let decoder = Decoder::new();
 
     let json = br#"{"id":42,"name":"example"}"#;
     let bytes = Bytes::copy_from_slice(json);
@@ -166,8 +166,8 @@ mod test {
 
   #[test]
   fn test_encode_decode_roundtrip() {
-    let encoder = JSONEncoder::new();
-    let decoder = JSONDecoder::new();
+    let encoder = Encoder::new();
+    let decoder = Decoder::new();
 
     let original = TestEntity::new(123, "roundtrip_test");
 
@@ -184,9 +184,7 @@ mod test {
 
   #[test]
   fn test_json_encoder_multiple_types() {
-    let encoder_string = JSONEncoder::<String> {
-      _marker: PhantomData,
-    };
+    let encoder_string = Encoder::<String>::new();
 
     let result = encoder_string.encode(&"hello world".to_string());
     assert!(result.is_ok());
@@ -194,9 +192,7 @@ mod test {
 
   #[test]
   fn test_json_decoder_invalid_json() {
-    let decoder = JSONDecoder::<TestEntity> {
-      _marker: PhantomData,
-    };
+    let decoder = Decoder::<TestEntity>::new();
 
     let invalid_json = Bytes::from_static(b"not valid json");
     let result = decoder.decode(invalid_json);
@@ -206,9 +202,7 @@ mod test {
 
   #[test]
   fn test_json_decoder_type_mismatch() {
-    let decoder = JSONDecoder::<TestEntity> {
-      _marker: PhantomData,
-    };
+    let decoder = Decoder::<TestEntity>::new();
 
     let json = br#"{"id":"not_a_number","name":"test"}"#;
     let bytes = Bytes::copy_from_slice(json);
@@ -225,12 +219,8 @@ mod test {
       metadata: String,
     }
 
-    let encoder = JSONEncoder::<Nested> {
-      _marker: PhantomData,
-    };
-    let decoder = JSONDecoder::<Nested> {
-      _marker: PhantomData,
-    };
+    let encoder = Encoder::<Nested>::new();
+    let decoder = Decoder::<Nested>::new();
 
     let original = Nested {
       data: TestEntity::new(999, "nested"),
