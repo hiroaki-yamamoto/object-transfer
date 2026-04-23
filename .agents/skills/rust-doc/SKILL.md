@@ -20,8 +20,11 @@ The output documentation should follow these requirements:
 - If you write an example in the documentation, it should be a complete, and
   runnable example that demonstrates how to use the item being documented.
 - **DO NOT use `ignore` in the example code** unless the example is
-  intended to be wrong code that demonstrates a common mistake or a pitfall. If
-  you need third-party tools like nats, I permit you to use `no_run` instead.
+  intended to be wrong code that demonstrates a common mistake or a pitfall.
+- **DO NOT use `no_run` in the example code** unless the example is intended to be
+  a code snippet that cannot be run in a test environment (e.g., it requires
+  external dependencies or system resources that are not available in the test
+  environment).
 - The documentation should be clear, concise, and easy to understand. It should
   explain the purpose of the item being documented, how to use it, and any
   important details or caveats that users should be aware of.
