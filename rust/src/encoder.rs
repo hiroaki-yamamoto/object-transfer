@@ -54,12 +54,12 @@
 //!
 //! # #[cfg(feature = "json")]
 //! # fn example() -> Result<(), Box<dyn std::error::Error>> {
-//! let encoder = JSONEncoder;
-//! let decoder = JSONDecoder;
+//! let encoder = JSONEncoder::new();
+//! let decoder = JSONDecoder::new();
 //!
 //! let event = Event { id: 1, name: "test".to_string() };
 //! let bytes = encoder.encode(&event)?;
-//! let decoded: Event = decoder.decode(&bytes)?;
+//! let decoded: Event = decoder.decode(bytes)?;
 //! # Ok(())
 //! # }
 //! ```
