@@ -19,8 +19,6 @@
 mod ack_noop;
 pub mod encoder;
 pub mod errors;
-#[cfg(test)]
-pub(crate) mod format;
 #[cfg(feature = "nats")]
 pub mod nats;
 mod options;
