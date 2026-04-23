@@ -113,7 +113,7 @@ mod tests {
   use crate::encoder::MockEncoder;
   use crate::errors::BrokerError;
   use crate::tests::entity::TestEntity;
-  use crate::tests::error::MockBrokerErr;
+  use crate::tests::error::{MockBrokerErr, MockEncErr};
   use crate::traits::MockPubCtxTrait;
 
   use super::*;
@@ -162,6 +162,10 @@ mod tests {
       Pub::new(Arc::new(ctx), subject, Arc::new(encoder));
     let res = publisher.publish(&entity).await;
     let err_msg = res.unwrap_err().to_string();
-    assert_eq!(err_msg, MockBrokerErr {}.to_string());
+    assert_eq!(
+      err_msg,
+      PubError::<MockEncErr>::BrokerError(BrokerError::new(MockBrokerErr))
+        .to_string()
+    );
   }
 }

@@ -151,7 +151,6 @@ where
 mod test {
   use ::bytes::Bytes;
   use ::futures::stream::StreamExt;
-  use ::mockall::predicate::*;
   use ::serde_json::{from_slice as parse, to_vec as jsonify};
 
   use crate::UnSubNoop;
@@ -186,13 +185,13 @@ mod test {
       })
       .collect();
     let mut decoder = MockDecoder::new();
-    let mut expect_decoder = decoder.expect_decode().returning(|bytes| {
-      let entity: TestEntity = parse(&bytes).unwrap();
-      Ok(entity)
-    });
-    for item in &data {
-      expect_decoder = expect_decoder.with(eq(item.0.clone()));
-    }
+    decoder
+      .expect_decode()
+      .times(entities.len())
+      .returning(|bytes| {
+        let entity: TestEntity = parse(&bytes).unwrap();
+        Ok(entity)
+      });
     let ctx: Arc<dyn SubCtxTrait + Send + Sync> =
       Arc::new(SubscribeMock::new(data));
     let options = SubOpt::new().auto_ack(auto_ack);
