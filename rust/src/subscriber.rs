@@ -2,32 +2,34 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use futures::TryStreamExt;
 use futures::stream::BoxStream;
-use serde::de::DeserializeOwned;
+use futures::{TryFutureExt, TryStreamExt};
+use serde::de::{DeserializeOwned, Error as DeErr};
 
-use crate::errors::{SubError, UnSubError};
-use crate::format::Format;
+use crate::encoder::Decoder;
+use crate::errors::{DecodeError, SubError, UnSubError};
 use crate::options::SubOpt;
 use crate::traits::{AckTrait, SubCtxTrait, SubTrait, UnSubTrait};
 
-/// Subscriber wrapper that deserializes messages and optionally acknowledges
-/// them.
+/// Subscriber wrapper that deserializes messages and optionally acknowledges them.
 ///
-/// The subscriber relies on a [`SubCtxTrait`] implementation for message
-/// retrieval and a [`SubOptTrait`] provider for decoding and acknowledgment
-/// behavior.
+/// The subscriber uses a pluggable [`Decoder`] to deserialize messages,
+/// relies on a [`SubCtxTrait`] implementation for message retrieval, and optionally
+/// acknowledges them based on [`SubOpt`] settings. The decoder is passed at construction time,
+/// enabling runtime format selection.
 ///
-/// # Example
+/// # Example with JSON
 ///
 /// ```rust,no_run
 /// use std::sync::Arc;
 /// use futures::StreamExt;
 /// use serde::Deserialize;
-/// use object_transfer::{Format, Sub};
+/// use object_transfer::{
+///   encoder::JSONDecoder,
+///   Sub, SubOpt,
+/// };
 /// use object_transfer::nats::{SubFetcherOpt, SubFetcher};
-/// use object_transfer::traits::{SubTrait, UnSubTrait};
-/// use object_transfer::SubOpt;
+/// use object_transfer::traits::{SubTrait};
 ///
 /// #[derive(Deserialize, Debug)]
 /// struct Event {
@@ -44,13 +46,18 @@ use crate::traits::{AckTrait, SubCtxTrait, SubTrait, UnSubTrait};
 ///   let fetcher_option = SubFetcherOpt::new(Arc::from("events"))
 ///       .subjects(vec!["events.user_created"])
 ///       .durable_name("user-created");
-///   let sub_option = SubOpt::new().format(Format::JSON);
 ///
 ///   // SubFetcher implements both SubCtxTrait and UnSubTrait.
 ///   let fetcher = Arc::new(SubFetcher::new(js, fetcher_option).await?);
 ///   let unsub = fetcher.clone();
 ///
-///   let subscriber: Sub<Event> = Sub::new(fetcher, unsub, sub_option);
+///   let options = SubOpt::new().auto_ack(false);
+///   let subscriber: Sub<Event, _> = Sub::new(
+///     fetcher,
+///     unsub,
+///     Arc::new(JSONDecoder::new()),
+///     options,
+///   );
 ///   let mut stream = subscriber.subscribe().await?;
 ///
 ///   while let Some(Ok((event, ack))) = stream.next().await {
@@ -62,32 +69,99 @@ use crate::traits::{AckTrait, SubCtxTrait, SubTrait, UnSubTrait};
 ///   Ok(())
 /// }
 /// ```
-pub struct Sub<T> {
+///
+/// # Example with Custom Format
+///
+/// ```rust,no_run
+/// use std::sync::Arc;
+/// use bytes::Bytes;
+/// use serde::de::DeserializeOwned;
+/// use object_transfer::{
+///   encoder::Decoder,
+///   Sub, SubOpt,
+///   traits::SubTrait,
+/// };
+///
+/// struct CustomDecoder;
+///
+/// #[derive(Debug, serde::Deserialize)]
+/// struct MyType {
+///   data: String,
+/// }
+///
+/// #[derive(Debug)]
+/// enum CustomError {
+///   InvalidData,
+/// }
+///
+/// impl std::fmt::Display for CustomError {
+///   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+///     write!(f, "Custom decode error")
+///   }
+/// }
+///
+/// impl std::error::Error for CustomError {}
+///
+/// impl serde::de::Error for CustomError {
+///   fn custom<T: std::fmt::Display>(_msg: T) -> Self {
+///     CustomError::InvalidData
+///   }
+/// }
+///
+/// impl Decoder for CustomDecoder {
+///   type Item = MyType;
+///   type Error = CustomError;
+///
+///   fn decode(&self, data: Bytes) -> Result<Self::Item, Self::Error> {
+///     let text = String::from_utf8(data.to_vec())
+///       .map_err(|_| CustomError::InvalidData)?;
+///     Ok(MyType { data: text })
+///   }
+/// }
+/// ```
+pub struct Sub<T, DecodeErrorType: DeErr + Send + Sync> {
   ctx: Arc<dyn SubCtxTrait + Send + Sync>,
   unsub: Arc<dyn UnSubTrait + Send + Sync>,
+  decoder: Arc<dyn Decoder<Item = T, Error = DecodeErrorType> + Send + Sync>,
   options: SubOpt,
   _marker: PhantomData<T>,
 }
 
-impl<T> Sub<T>
+impl<T, DecodeErrorType> Sub<T, DecodeErrorType>
 where
   T: DeserializeOwned + Send + Sync,
+  DecodeErrorType: DeErr + Send + Sync,
 {
-  /// Creates a new subscriber using the provided context, optional
-  /// unsubscribe handler, and subscription options.
+  /// Creates a new subscriber using the provided context, decoder, and options.
   ///
   /// # Parameters
-  /// - `ctx`: Message retrieval context responsible for producing raw items.
+  /// - `ctx`: Message retrieval context responsible for producing raw bytes.
   /// - `unsub`: Unsubscribe handler to cancel the subscription when requested.
-  /// - `options`: Subscription behavior such as auto-ack and payload format.
+  /// - `decoder`: A trait object implementing [`Decoder`] for your format.
+  ///   Pass `Arc::new(JSONDecoder::new())`, `Arc::new(MessagePackDecoder::new())`, or
+  ///   your custom decoder implementation.
+  /// - `options`: Subscription behavior such as auto-acknowledgment settings.
+  ///
+  /// # Decoder Selection
+  ///
+  /// The decoder is passed at construction time, allowing for:
+  /// - **Compile-time format selection**: Create different subscriber instances with different types
+  /// - **Runtime format selection**: Use `Arc<dyn Decoder<...>>` to select format dynamically
+  ///
+  /// # Error Types
+  ///
+  /// The generic `DecodeErrorType` type parameter is the error type of your decoder. Different decoders
+  /// can use different error types (e.g., `serde_json::Error`, custom parse error types).
   pub fn new(
     ctx: Arc<dyn SubCtxTrait + Send + Sync>,
     unsub: Arc<dyn UnSubTrait + Send + Sync>,
+    decoder: Arc<dyn Decoder<Item = T, Error = DecodeErrorType> + Send + Sync>,
     options: SubOpt,
   ) -> Self {
     Self {
       ctx,
       unsub,
+      decoder,
       options,
       _marker: PhantomData,
     }
@@ -95,33 +169,36 @@ where
 }
 
 #[async_trait]
-impl<T> SubTrait for Sub<T>
+impl<T, DecodeErrorType> SubTrait for Sub<T, DecodeErrorType>
 where
   T: DeserializeOwned + Send + Sync,
+  DecodeErrorType: DeErr + Send + Sync,
 {
   type Item = T;
+  type DecodeErr = DecodeErrorType;
   /// Returns a stream of decoded messages alongside their acknowledgment
   /// handles. When auto-acknowledgment is enabled, messages are acknowledged
   /// before being yielded to the consumer.
   async fn subscribe(
     &self,
   ) -> Result<
-    BoxStream<Result<(Self::Item, Arc<dyn AckTrait + Send + Sync>), SubError>>,
-    SubError,
+    BoxStream<
+      Result<
+        (Self::Item, Arc<dyn AckTrait + Send + Sync>),
+        SubError<Self::DecodeErr>,
+      >,
+    >,
+    SubError<Self::DecodeErr>,
   > {
-    let messages = self.ctx.subscribe().await?;
+    let messages = self.ctx.subscribe().await?.map_err(SubError::from);
     let stream = messages.and_then(async move |(msg, acker)| {
       if self.options.auto_ack {
-        acker.ack().await?;
+        acker.ack().map_err(|e| SubError::AckError(e)).await?;
       }
-      let data = match self.options.format {
-        Format::MessagePack => {
-          rmp_serde::from_slice::<T>(&msg).map_err(SubError::MessagePackDecode)
-        }
-        Format::JSON => {
-          serde_json::from_slice::<T>(&msg).map_err(SubError::Json)
-        }
-      }?;
+      let data = self
+        .decoder
+        .decode(msg)
+        .map_err(|e| SubError::from(DecodeError::new(e)))?;
       Ok((data, acker))
     });
     Ok(Box::pin(stream))
@@ -129,9 +206,10 @@ where
 }
 
 #[async_trait]
-impl<T> UnSubTrait for Sub<T>
+impl<T, DecodeErrorType> UnSubTrait for Sub<T, DecodeErrorType>
 where
   T: DeserializeOwned + Send + Sync,
+  DecodeErrorType: DeErr + Send + Sync,
 {
   /// Invokes the configured unsubscribe handler.
   async fn unsubscribe(&self) -> Result<(), UnSubError> {
@@ -143,17 +221,19 @@ where
 mod test {
   use ::bytes::Bytes;
   use ::futures::stream::StreamExt;
-  use ::rmp_serde::to_vec as to_msgpack;
-  use ::serde_json::to_vec as jsonify;
+  use ::serde_json::{from_slice as parse, to_vec as jsonify};
 
   use crate::UnSubNoop;
+  use crate::encoder::MockDecoder;
   use crate::errors::AckError;
-  use crate::tests::{entity::TestEntity, subscribe::SubscribeMock};
+  use crate::tests::{
+    entity::TestEntity, error::MockDeErr, subscribe::SubscribeMock,
+  };
   use crate::traits::MockAckTrait;
 
   use super::*;
 
-  async fn test_subscribe(format: Format, auto_ack: bool) {
+  async fn test_subscribe(auto_ack: bool) {
     let entities = vec![
       TestEntity::new(1, "Test1"),
       TestEntity::new(2, "Test2"),
@@ -169,19 +249,28 @@ mod test {
           ack_mock.expect_ack().never();
         }
         return (
-          Bytes::from(match format {
-            Format::MessagePack => to_msgpack(e).unwrap(),
-            Format::JSON => jsonify(e).unwrap(),
-          }),
+          Bytes::from(jsonify(e).unwrap()),
           Arc::new(ack_mock) as Arc<dyn AckTrait + Send + Sync>,
         );
       })
       .collect();
+    let mut decoder = MockDecoder::new();
+    decoder
+      .expect_decode()
+      .times(entities.len())
+      .returning(|bytes| {
+        let entity: TestEntity = parse(&bytes).unwrap();
+        Ok(entity)
+      });
     let ctx: Arc<dyn SubCtxTrait + Send + Sync> =
       Arc::new(SubscribeMock::new(data));
-    let options = SubOpt::new().auto_ack(auto_ack).format(format);
-    let subscribe: Sub<TestEntity> =
-      Sub::new(ctx, Arc::new(UnSubNoop::new(false)), options);
+    let options = SubOpt::new().auto_ack(auto_ack);
+    let subscribe: Sub<TestEntity, _> = Sub::new(
+      ctx,
+      Arc::new(UnSubNoop::new(false)),
+      Arc::new(decoder),
+      options,
+    );
     let stream = subscribe.subscribe().await.unwrap();
     let obtained: Vec<TestEntity> = stream
       .try_collect::<Vec<_>>()
@@ -194,26 +283,17 @@ mod test {
   }
 
   #[tokio::test]
-  async fn test_subscribe_json() {
-    test_subscribe(Format::JSON, true).await;
+  async fn test_subscribe_ack() {
+    test_subscribe(true).await;
   }
 
   #[tokio::test]
-  async fn test_subscribe_messagepack() {
-    test_subscribe(Format::MessagePack, true).await;
+  async fn test_subscribe_no_auto_ack() {
+    test_subscribe(false).await;
   }
 
   #[tokio::test]
-  async fn test_subscribe_json_no_auto_ack() {
-    test_subscribe(Format::JSON, false).await;
-  }
-
-  #[tokio::test]
-  async fn test_subscribe_messagepack_no_auto_ack() {
-    test_subscribe(Format::MessagePack, false).await;
-  }
-
-  async fn test_ack_err(format: Format) {
+  async fn test_ack_err() {
     let mut data: Vec<(Bytes, Arc<dyn AckTrait + Send + Sync>)> = Vec::new();
     data.push((Bytes::new(), {
       let mut ack_mock = MockAckTrait::new();
@@ -225,9 +305,15 @@ mod test {
     }));
     let ctx: Arc<dyn SubCtxTrait + Send + Sync> =
       Arc::new(SubscribeMock::new(data));
-    let options = SubOpt::new().auto_ack(true).format(format);
-    let subscribe: Sub<TestEntity> =
-      Sub::new(ctx, Arc::new(UnSubNoop::new(false)), options);
+    let mut decoder = MockDecoder::new();
+    decoder.expect_decode().never();
+    let options = SubOpt::new().auto_ack(true);
+    let subscribe: Sub<TestEntity, _> = Sub::new(
+      ctx,
+      Arc::new(UnSubNoop::new(false)),
+      Arc::new(decoder),
+      options,
+    );
     let stream = subscribe.subscribe().await.unwrap();
     let obtained: Vec<String> = stream
       .collect::<Vec<_>>()
@@ -237,17 +323,7 @@ mod test {
       .collect();
     assert_eq!(
       obtained,
-      vec![SubError::AckError(AckError::ErrorTest).to_string()]
+      vec![SubError::<MockDeErr>::AckError(AckError::ErrorTest).to_string()]
     );
-  }
-
-  #[tokio::test]
-  async fn test_ack_json_err() {
-    test_ack_err(Format::JSON).await;
-  }
-
-  #[tokio::test]
-  async fn test_ack_messagepack_err() {
-    test_ack_err(Format::MessagePack).await;
   }
 }

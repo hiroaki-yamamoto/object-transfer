@@ -5,7 +5,7 @@ use ::redis::{
   AsyncTypedCommands, aio::MultiplexedConnection, streams::StreamMaxlen,
 };
 
-use crate::errors::{BrokerError, PubError};
+use crate::errors::BrokerError;
 use crate::traits::PubCtxTrait;
 
 use super::PublisherConfig;
@@ -50,11 +50,11 @@ impl PubCtxTrait for Publisher {
     &self,
     topic: &str,
     payload: Bytes,
-  ) -> Result<(), PubError> {
+  ) -> Result<(), BrokerError> {
     let group_name = self.cfg.group_name.clone().unwrap_or(topic.to_string());
     let mut con = self.con.clone();
     make_stream_group(self.con.clone(), topic, group_name)
-      .map_err(|err| BrokerError::from(PublishError::GroupCreation(err)))
+      .map_err(|err| PublishError::GroupCreation(err))
       .await?;
     con
       .xadd_maxlen(
@@ -63,7 +63,7 @@ impl PubCtxTrait for Publisher {
         "*",
         &[("data", payload.to_vec())],
       )
-      .map_err(|err| BrokerError::from(PublishError::Push(err)))
+      .map_err(|err| PublishError::Push(err))
       .await?;
     Ok(())
   }

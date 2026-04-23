@@ -19,9 +19,9 @@
 //! - [`PubCtxTrait`]: Publish raw byte payloads to specific topics.
 //! - [`SubCtxTrait`]: Subscribe to a stream of raw byte messages from a topic.
 //!
-//! ## Additional Traits
+//! ## Additional Types
 //!
-//! - [`SubOptTrait`]: Configure subscription options like auto-acknowledgment and format.
+//! - [`crate::SubOpt`]: Configure subscription options like auto-acknowledgment.
 //!
 //! # Dynamic Dispatch Usage
 //!
@@ -40,7 +40,7 @@
 //!     data: String,
 //! }
 //!
-//! async fn send_message(publisher: Arc<dyn PubTrait<Item = MyMessage>>) {
+//! async fn send_message(publisher: Arc<dyn PubTrait<Item = MyMessage, EncodeErr = serde_json::Error>>) {
 //!     let msg = MyMessage { data: "hello".to_string() };
 //!     publisher.publish(&msg).await.ok();
 //! }
@@ -60,7 +60,7 @@
 //! }
 //!
 //! async fn receive_messages(
-//!     subscriber: Arc<dyn SubTrait<Item = MyMessage>>
+//!     subscriber: Arc<dyn SubTrait<Item = MyMessage, DecodeErr = serde_json::Error>>
 //! ) {
 //!     if let Ok(mut stream) = subscriber.subscribe().await {
 //!         while let Some(Ok((msg, ack))) = stream.next().await {
@@ -165,27 +165,34 @@ use ::std::sync::Arc;
 
 use ::async_trait::async_trait;
 use ::futures::stream::BoxStream;
-use ::serde::{Serialize, de::DeserializeOwned};
+use ::serde::{
+  de::{DeserializeOwned, Error as DeErr},
+  ser::{Error as EncErr, Serialize},
+};
 
-use crate::errors::{AckError, PubError, SubError, UnSubError};
+use crate::errors::{AckError, BrokerError, PubError, SubError, UnSubError};
 
 #[cfg(test)]
-use crate::tests::entity::TestEntity;
+use crate::tests::{entity::TestEntity, error::MockDeErr, error::MockEncErr};
 #[cfg(test)]
 use ::mockall::automock;
 
 /// Abstraction for publishing typed items.
 ///
 /// Implementors handle serialization and delivery to a concrete backend.
-#[cfg_attr(test, automock(type Item = TestEntity;))]
+#[cfg_attr(test, automock(type Item = TestEntity; type EncodeErr = MockEncErr;))]
 #[async_trait]
 pub trait PubTrait {
   type Item: Serialize + Send + Sync;
+  type EncodeErr: EncErr + Send + Sync;
   /// Publish a serializable item through the implementor.
   ///
   /// # Parameters
   /// - `obj`: The typed item to serialize and send to the backing transport.
-  async fn publish(&self, obj: &Self::Item) -> Result<(), PubError>;
+  async fn publish(
+    &self,
+    obj: &Self::Item,
+  ) -> Result<(), PubError<Self::EncodeErr>>;
 }
 
 /// Acknowledge receipt of a message.
@@ -199,11 +206,17 @@ pub trait AckTrait {
 #[async_trait]
 pub trait SubTrait {
   type Item: DeserializeOwned + Send + Sync;
+  type DecodeErr: DeErr + Send + Sync;
   async fn subscribe(
     &self,
   ) -> Result<
-    BoxStream<Result<(Self::Item, Arc<dyn AckTrait + Send + Sync>), SubError>>,
-    SubError,
+    BoxStream<
+      Result<
+        (Self::Item, Arc<dyn AckTrait + Send + Sync>),
+        SubError<Self::DecodeErr>,
+      >,
+    >,
+    SubError<Self::DecodeErr>,
   >;
 }
 
@@ -223,8 +236,11 @@ pub trait PubCtxTrait {
   /// # Parameters
   /// - `topic`: Subject or channel name the payload should be delivered to.
   /// - `payload`: Serialized bytes to forward to the transport.
-  async fn publish(&self, topic: &str, payload: Bytes)
-  -> Result<(), PubError>;
+  async fn publish(
+    &self,
+    topic: &str,
+    payload: Bytes,
+  ) -> Result<(), BrokerError>;
 }
 
 /// Context capable of producing a stream of raw messages with ack handles.
@@ -233,8 +249,8 @@ pub trait SubCtxTrait {
   async fn subscribe(
     &self,
   ) -> Result<
-    BoxStream<Result<(Bytes, Arc<dyn AckTrait + Send + Sync>), SubError>>,
-    SubError,
+    BoxStream<Result<(Bytes, Arc<dyn AckTrait + Send + Sync>), BrokerError>>,
+    BrokerError,
   >;
 }
 
@@ -245,7 +261,7 @@ mod test {
   use super::*;
   #[test]
   fn test_pub_safety() {
-    assert_obj_safe!(PubTrait<Item = TestEntity>);
+    assert_obj_safe!(PubTrait<Item = TestEntity, EncodeErr = MockEncErr>);
   }
 
   #[test]
@@ -255,7 +271,7 @@ mod test {
 
   #[test]
   fn test_sub_safety() {
-    assert_obj_safe!(SubTrait<Item = TestEntity>);
+    assert_obj_safe!(SubTrait<Item = TestEntity, DecodeErr = MockDeErr  >);
   }
 
   #[test]

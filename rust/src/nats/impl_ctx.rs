@@ -10,7 +10,7 @@ use ::futures::stream::BoxStream;
 use ::futures::{StreamExt, TryFutureExt, TryStreamExt};
 use ::std::boxed::Box;
 
-use crate::errors::{PubError, SubError};
+use crate::errors::BrokerError;
 use crate::traits::{AckTrait, PubCtxTrait, SubCtxTrait};
 
 #[async_trait]
@@ -19,13 +19,13 @@ impl PubCtxTrait for Context {
     &self,
     topic: &str,
     payload: Bytes,
-  ) -> Result<(), PubError> {
+  ) -> Result<(), BrokerError> {
     self
       .publish(topic.to_string(), payload)
-      .map_err(|e| PubError::BrokerError(e.into()))
+      .map_err(|e| BrokerError::from(e))
       .await?
       .await
-      .map_err(|e| PubError::BrokerError(e.into()))?;
+      .map_err(|e| BrokerError::from(e))?;
     Ok(())
   }
 }
@@ -37,14 +37,16 @@ macro_rules! impl_sub_ctx_trait {
       async fn subscribe(
         &self,
       ) -> Result<
-        BoxStream<Result<(Bytes, Arc<dyn AckTrait + Send + Sync>), SubError>>,
-        SubError,
+        BoxStream<
+          Result<(Bytes, Arc<dyn AckTrait + Send + Sync>), BrokerError>,
+        >,
+        BrokerError,
       > {
         let messages = self
           .messages()
-          .map_err(|e| SubError::BrokerError(e.into()))
+          .map_err(|e| BrokerError::from(e))
           .await?
-          .map_err(|e| SubError::BrokerError(e.into()))
+          .map_err(|e| BrokerError::from(e))
           .and_then(async |msg| {
             let (msg, acker) = msg.split();
             Ok((
