@@ -2,7 +2,7 @@ name: Test Rust Code
 
 on:
   push:
-    branches: [master]
+    branches: [ master ]
     paths:
       - "rust/**"
       - ".github/workflows/test_rust.yml"
@@ -11,7 +11,7 @@ on:
   pull_request:
 
 jobs:
-  test:
+  test_rust:
     runs-on: ubuntu-latest
 
     steps:

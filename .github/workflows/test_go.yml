@@ -2,14 +2,14 @@ name: Test Go Code
 
 on:
   push:
-    branches: [master]
+    branches: [ master ]
     paths:
       - "go/**"
       - ".github/workflows/test_go.yml"
   pull_request:
 
 jobs:
-  test:
+  test_go:
     runs-on: ubuntu-latest
 
     steps:
