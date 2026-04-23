@@ -9,19 +9,23 @@ use crate::encoder::Encoder;
 use crate::errors::{EncodeError, PubError};
 use crate::traits::{PubCtxTrait, PubTrait};
 
-/// Publisher for serializable messages using a pluggable context.
+/// Publisher for serializable messages using a pluggable encoder and context.
 ///
-/// The publisher encodes messages according to the configured [`Format`] and
-/// delegates the actual publish call to an injected [`PubCtxTrait`] so it can
-/// work with different backends.
+/// The publisher encodes messages using the provided [`Encoder`]
+/// and delegates the actual publish call to an injected [`PubCtxTrait`] so it can
+/// work with different backends. The encoder is passed at construction time, enabling
+/// runtime format selection and supporting the "any-format" design.
 ///
-/// # Example
+/// # Example with JSON
 ///
 /// ```rust,no_run
 /// use std::sync::Arc;
 /// use serde::Serialize;
-/// use object_transfer::{Format, Pub};
-/// use object_transfer::traits::{PubCtxTrait, PubTrait};
+/// use object_transfer::{
+///   encoder::JSONEncoder,
+///   Pub,
+///   traits::PubTrait,
+/// };
 ///
 /// #[derive(Serialize)]
 /// struct UserCreated {
@@ -32,13 +36,13 @@ use crate::traits::{PubCtxTrait, PubTrait};
 /// #[tokio::main]
 /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   let client = async_nats::connect("demo.nats.io").await?;
-///   let js = async_nats::jetstream::new(client);
+///   let js = Arc::new(async_nats::jetstream::new(client));
 ///
-///   // JetStream context satisfies `PubCtxTrait`, so we can publish typed events.
-///   let publisher: Pub<UserCreated> = Pub::new(
-///     Arc::new(js),
+///   // Create a publisher with JSON encoder
+///   let publisher: Pub<UserCreated, _> = Pub::new(
+///     js,
 ///     "events.user_created",
-///     Format::JSON,
+///     Arc::new(JSONEncoder::new()),
 ///   );
 ///
 ///   let event = UserCreated {
@@ -47,6 +51,50 @@ use crate::traits::{PubCtxTrait, PubTrait};
 ///   };
 ///
 ///   publisher.publish(&event).await?;
+///   Ok(())
+/// }
+/// ```
+///
+/// # Example with Custom Format
+///
+/// ```rust,no_run
+/// use std::sync::Arc;
+/// use serde::Serialize;
+/// use bytes::Bytes;
+/// use object_transfer::{
+///   encoder::Encoder,
+///   Pub,
+///   traits::PubTrait,
+/// };
+///
+/// #[derive(Serialize)]
+/// struct Message {
+///   text: String,
+/// }
+///
+/// struct CustomEncoder;
+///
+/// impl Encoder for CustomEncoder {
+///   type Item = Message;
+///   type Error = std::fmt::Error;
+///
+///   fn encode(&self, item: &Self::Item) -> Result<Bytes, Self::Error> {
+///     Ok(Bytes::from(item.text.clone()))
+///   }
+/// }
+///
+/// #[tokio::main]
+/// async fn main() -> Result<(), Box<dyn std::error::Error>> {
+///   let client = async_nats::connect("demo.nats.io").await?;
+///   let js = Arc::new(async_nats::jetstream::new(client));
+///
+///   let publisher: Pub<Message, _> = Pub::new(
+///     js,
+///     "events.custom",
+///     Arc::new(CustomEncoder),
+///   );
+///
+///   publisher.publish(&Message { text: "Hello".to_string() }).await?;
 ///   Ok(())
 /// }
 /// ```
@@ -62,12 +110,25 @@ where
   T: Serialize + Send + Sync,
   SerErr: EncErr + Send + Sync,
 {
-  /// Creates a new publisher for the given subject and serialization format.
+  /// Creates a new publisher for the given subject with a pluggable encoder.
   ///
   /// # Parameters
   /// - `ctx`: Backend publish context that delivers serialized bytes.
   /// - `subject`: Destination subject or topic to send messages to.
-  /// - `format`: Serialization format used when encoding published items.
+  /// - `encoder`: A trait object implementing [`Encoder`] for your format.
+  ///   Pass `Arc::new(JSONEncoder::new())`, `Arc::new(MessagePackEncoder::new())`, or
+  ///   your custom encoder implementation.
+  ///
+  /// # Encoder Selection
+  ///
+  /// The encoder is passed at construction time, allowing for:
+  /// - **Compile-time format selection**: Create different publisher instances with different types
+  /// - **Runtime format selection**: Use `Arc<dyn Encoder<...>>` to select format dynamically
+  ///
+  /// # Error Types
+  ///
+  /// The generic `SerErr` type parameter is the error type of your encoder. Different encoders
+  /// can use different error types (e.g., `serde_json::Error`, custom error types).
   pub fn new(
     ctx: Arc<dyn PubCtxTrait + Send + Sync>,
     subject: impl Into<String>,

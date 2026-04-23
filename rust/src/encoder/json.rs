@@ -28,7 +28,7 @@ use super::traits::{Decoder as DecoderTrait, Encoder as EncoderTrait};
 /// }
 ///
 /// fn example() {
-///   let encoder = Encoder::new();
+///   let encoder = JSONEncoder::new();
 ///   let user = User {
 ///       id: 42,
 ///       name: "Alice".to_string(),

@@ -11,7 +11,7 @@
 //! use object_transfer::errors::DecodeError;
 //!
 //! // Errors from different formats are automatically converted to DecodeError
-//! let json_err: DecodeError = serde_json::from_str::<i32>("invalid").unwrap_err().into();
+//! let json_err: DecodeError<serde_json::Error> = serde_json::from_str::<i32>("invalid").unwrap_err().into();
 //! ```
 
 use ::serde::de::Error as DeErr;

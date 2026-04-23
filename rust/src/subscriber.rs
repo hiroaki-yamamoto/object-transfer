@@ -11,23 +11,25 @@ use crate::errors::{DecodeError, SubError, UnSubError};
 use crate::options::SubOpt;
 use crate::traits::{AckTrait, SubCtxTrait, SubTrait, UnSubTrait};
 
-/// Subscriber wrapper that deserializes messages and optionally acknowledges
-/// them.
+/// Subscriber wrapper that deserializes messages and optionally acknowledges them.
 ///
-/// The subscriber relies on a [`SubCtxTrait`] implementation for message
-/// retrieval and a [`SubOptTrait`] provider for decoding and acknowledgment
-/// behavior.
+/// The subscriber uses a pluggable [`Decoder`] to deserialize messages,
+/// relies on a [`SubCtxTrait`] implementation for message retrieval, and optionally
+/// acknowledges them based on [`SubOpt`] settings. The decoder is passed at construction time,
+/// enabling runtime format selection.
 ///
-/// # Example
+/// # Example with JSON
 ///
 /// ```rust,no_run
 /// use std::sync::Arc;
 /// use futures::StreamExt;
 /// use serde::Deserialize;
-/// use object_transfer::{Format, Sub};
+/// use object_transfer::{
+///   encoder::JSONDecoder,
+///   Sub, SubOpt,
+/// };
 /// use object_transfer::nats::{SubFetcherOpt, SubFetcher};
-/// use object_transfer::traits::{SubTrait, UnSubTrait};
-/// use object_transfer::SubOpt;
+/// use object_transfer::traits::{SubTrait};
 ///
 /// #[derive(Deserialize, Debug)]
 /// struct Event {
@@ -44,13 +46,18 @@ use crate::traits::{AckTrait, SubCtxTrait, SubTrait, UnSubTrait};
 ///   let fetcher_option = SubFetcherOpt::new(Arc::from("events"))
 ///       .subjects(vec!["events.user_created"])
 ///       .durable_name("user-created");
-///   let sub_option = SubOpt::new().format(Format::JSON);
 ///
 ///   // SubFetcher implements both SubCtxTrait and UnSubTrait.
 ///   let fetcher = Arc::new(SubFetcher::new(js, fetcher_option).await?);
 ///   let unsub = fetcher.clone();
 ///
-///   let subscriber: Sub<Event> = Sub::new(fetcher, unsub, sub_option);
+///   let options = SubOpt::new().auto_ack(false);
+///   let subscriber: Sub<Event, _> = Sub::new(
+///     fetcher,
+///     unsub,
+///     Arc::new(JSONDecoder::new()),
+///     options,
+///   );
 ///   let mut stream = subscriber.subscribe().await?;
 ///
 ///   while let Some(Ok((event, ack))) = stream.next().await {
@@ -60,6 +67,56 @@ use crate::traits::{AckTrait, SubCtxTrait, SubTrait, UnSubTrait};
 ///   }
 ///
 ///   Ok(())
+/// }
+/// ```
+///
+/// # Example with Custom Format
+///
+/// ```rust,no_run
+/// use std::sync::Arc;
+/// use bytes::Bytes;
+/// use serde::de::DeserializeOwned;
+/// use object_transfer::{
+///   encoder::Decoder,
+///   Sub, SubOpt,
+///   traits::SubTrait,
+/// };
+///
+/// struct CustomDecoder;
+///
+/// #[derive(Debug, serde::Deserialize)]
+/// struct MyType {
+///   data: String,
+/// }
+///
+/// #[derive(Debug)]
+/// enum CustomError {
+///   InvalidData,
+/// }
+///
+/// impl std::fmt::Display for CustomError {
+///   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+///     write!(f, "Custom decode error")
+///   }
+/// }
+///
+/// impl std::error::Error for CustomError {}
+///
+/// impl serde::de::Error for CustomError {
+///   fn custom<T: std::fmt::Display>(_msg: T) -> Self {
+///     CustomError::InvalidData
+///   }
+/// }
+///
+/// impl Decoder for CustomDecoder {
+///   type Item = MyType;
+///   type Error = CustomError;
+///
+///   fn decode(&self, data: Bytes) -> Result<Self::Item, Self::Error> {
+///     let text = String::from_utf8(data.to_vec())
+///       .map_err(|_| CustomError::InvalidData)?;
+///     Ok(MyType { data: text })
+///   }
 /// }
 /// ```
 pub struct Sub<T, DecodeErrorType: DeErr + Send + Sync> {
@@ -75,13 +132,26 @@ where
   T: DeserializeOwned + Send + Sync,
   DecodeErrorType: DeErr + Send + Sync,
 {
-  /// Creates a new subscriber using the provided context, optional
-  /// unsubscribe handler, and subscription options.
+  /// Creates a new subscriber using the provided context, decoder, and options.
   ///
   /// # Parameters
-  /// - `ctx`: Message retrieval context responsible for producing raw items.
+  /// - `ctx`: Message retrieval context responsible for producing raw bytes.
   /// - `unsub`: Unsubscribe handler to cancel the subscription when requested.
-  /// - `options`: Subscription behavior such as auto-ack and payload format.
+  /// - `decoder`: A trait object implementing [`Decoder`] for your format.
+  ///   Pass `Arc::new(JSONDecoder::new())`, `Arc::new(MessagePackDecoder::new())`, or
+  ///   your custom decoder implementation.
+  /// - `options`: Subscription behavior such as auto-acknowledgment settings.
+  ///
+  /// # Decoder Selection
+  ///
+  /// The decoder is passed at construction time, allowing for:
+  /// - **Compile-time format selection**: Create different subscriber instances with different types
+  /// - **Runtime format selection**: Use `Arc<dyn Decoder<...>>` to select format dynamically
+  ///
+  /// # Error Types
+  ///
+  /// The generic `DecodeErrorType` type parameter is the error type of your decoder. Different decoders
+  /// can use different error types (e.g., `serde_json::Error`, custom parse error types).
   pub fn new(
     ctx: Arc<dyn SubCtxTrait + Send + Sync>,
     unsub: Arc<dyn UnSubTrait + Send + Sync>,

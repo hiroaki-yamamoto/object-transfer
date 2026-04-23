@@ -19,9 +19,9 @@
 //! - [`PubCtxTrait`]: Publish raw byte payloads to specific topics.
 //! - [`SubCtxTrait`]: Subscribe to a stream of raw byte messages from a topic.
 //!
-//! ## Additional Traits
+//! ## Additional Types
 //!
-//! - [`SubOptTrait`]: Configure subscription options like auto-acknowledgment and format.
+//! - [`crate::SubOpt`]: Configure subscription options like auto-acknowledgment.
 //!
 //! # Dynamic Dispatch Usage
 //!
@@ -40,7 +40,7 @@
 //!     data: String,
 //! }
 //!
-//! async fn send_message(publisher: Arc<dyn PubTrait<Item = MyMessage>>) {
+//! async fn send_message(publisher: Arc<dyn PubTrait<Item = MyMessage, EncodeErr = serde_json::Error>>) {
 //!     let msg = MyMessage { data: "hello".to_string() };
 //!     publisher.publish(&msg).await.ok();
 //! }
@@ -60,7 +60,7 @@
 //! }
 //!
 //! async fn receive_messages(
-//!     subscriber: Arc<dyn SubTrait<Item = MyMessage>>
+//!     subscriber: Arc<dyn SubTrait<Item = MyMessage, DecodeErr = serde_json::Error>>
 //! ) {
 //!     if let Ok(mut stream) = subscriber.subscribe().await {
 //!         while let Some(Ok((msg, ack))) = stream.next().await {
