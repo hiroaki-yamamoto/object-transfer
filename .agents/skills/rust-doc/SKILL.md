@@ -24,8 +24,7 @@ The output documentation should follow these requirements:
   intended to be wrong code that demonstrates a common mistake or a pitfall.
 - **DO NOT use `no_run` in the example code** unless the example is intended to be
   a code snippet that cannot be run in a test environment (e.g., it requires
-  external dependencies or system resources that are not available in the test
-  environment).
+  external system resources that are not available in the test environment).
 - The documentation should be clear, concise, and easy to understand. It should
   explain the purpose of the item being documented, how to use it, and any
   important details or caveats that users should be aware of.
