@@ -126,7 +126,7 @@ mod tests {
     let mut ctx = MockPubCtxTrait::new();
     ctx
       .expect_publish()
-      .with(eq(subject.clone()), eq(correct.clone()))
+      .with(eq(subject), eq(correct.clone()))
       .times(1)
       .returning(|_, _| Ok(()));
     let mut encoder = MockEncoder::new();
@@ -149,7 +149,7 @@ mod tests {
     let mut ctx = MockPubCtxTrait::new();
     ctx
       .expect_publish()
-      .with(eq(subject.clone()), eq(correct.clone()))
+      .with(eq(subject), eq(correct.clone()))
       .times(1)
       .returning(|_, _| Err(BrokerError::new(MockBrokerErr)));
     let mut encoder = MockEncoder::new();

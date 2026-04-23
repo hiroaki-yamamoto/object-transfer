@@ -40,6 +40,3 @@ pub use publisher::Pub;
 pub use subscriber::Sub;
 pub use traits::{PubTrait, SubTrait, UnSubTrait};
 pub use unsub_noop::UnSubNoop;
-
-#[cfg(test)]
-pub(crate) use format::Format;
