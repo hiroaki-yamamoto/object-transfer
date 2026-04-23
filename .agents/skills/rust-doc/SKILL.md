@@ -14,6 +14,7 @@ description: |
 # Documentation Requirements
 The output documentation should follow these requirements:
 
+- Output the generated documentation in English.
 - The documentation should be written in markdown format. However, if
   the documentation is for a function, struct, or enum, it should be written in
   Rust doc comment format (i.e., using `///`).
@@ -38,6 +39,15 @@ The output documentation should follow these requirements:
   description of the module, its purpose, and any important details or caveats
   that users should be aware of. It should also include a brief overview of the
   items contained in the module.
+- Follow standard Rustdoc conventions for sections. Use `# Examples`,
+  `# Panics`, `# Errors`, and `# Safety` headings where applicable.
+- Use intra-doc links (e.g., `[`struct_name`]`,
+  `[`crate::module::Function`]`) when referencing other items in the library.
+- While examples must be complete and runnable, use the `# ` prefix to hide
+  boilerplate code (such as `fn main() { ... }` or non-essential `use`
+  statements) to keep the documentation concise and focused on the usage.
+- When updating an existing item, output the complete item code along with the
+  updated `///` comments to provide clear context.
 
 # Documentation Test
 To test the examples in the documentation, use the following command in `rust`
