@@ -5,14 +5,15 @@ use async_trait::async_trait;
 use serde::Serialize;
 use serde::ser::Error as EncErr;
 
-use crate::encoder::Encoder;
+use crate::brokers::PubBrokerTrait;
+use crate::encoders::Encoder;
 use crate::errors::{EncodeError, PubError};
-use crate::traits::{PubCtxTrait, PubTrait};
+use crate::traits::PubTrait;
 
 /// Publisher for serializable messages using a pluggable encoder and context.
 ///
 /// The publisher encodes messages using the provided [`Encoder`]
-/// and delegates the actual publish call to an injected [`PubCtxTrait`] so it can
+/// and delegates the actual publish call to an injected [`PubBrokerTrait`] so it can
 /// work with different backends. The encoder is passed at construction time, enabling
 /// runtime format selection and supporting the "any-format" design.
 ///
@@ -22,7 +23,7 @@ use crate::traits::{PubCtxTrait, PubTrait};
 /// use std::sync::Arc;
 /// use serde::Serialize;
 /// use object_transfer::{
-///   encoder::JSONEncoder,
+///   encoders::JSONEncoder,
 ///   Pub,
 ///   traits::PubTrait,
 /// };
@@ -62,7 +63,7 @@ use crate::traits::{PubCtxTrait, PubTrait};
 /// use serde::Serialize;
 /// use bytes::Bytes;
 /// use object_transfer::{
-///   encoder::Encoder,
+///   encoders::Encoder,
 ///   Pub,
 ///   traits::PubTrait,
 /// };
@@ -99,7 +100,7 @@ use crate::traits::{PubCtxTrait, PubTrait};
 /// }
 /// ```
 pub struct Pub<T, SerErr: EncErr + Send + Sync> {
-  ctx: Arc<dyn PubCtxTrait + Send + Sync>,
+  ctx: Arc<dyn PubBrokerTrait + Send + Sync>,
   subject: String,
   encoder: Arc<dyn Encoder<Item = T, Error = SerErr> + Send + Sync>,
   _phantom: PhantomData<T>,
@@ -130,7 +131,7 @@ where
   /// The generic `SerErr` type parameter is the error type of your encoder. Different encoders
   /// can use different error types (e.g., `serde_json::Error`, custom error types).
   pub fn new(
-    ctx: Arc<dyn PubCtxTrait + Send + Sync>,
+    ctx: Arc<dyn PubBrokerTrait + Send + Sync>,
     subject: impl Into<String>,
     encoder: Arc<dyn Encoder<Item = T, Error = SerErr> + Send + Sync>,
   ) -> Self {
@@ -171,11 +172,10 @@ mod tests {
   use ::bytes::Bytes;
   use ::mockall::predicate::*;
 
-  use crate::encoder::MockEncoder;
-  use crate::errors::BrokerError;
+  use crate::brokers::{errors::BrokerError, traits::MockPubBrokerTrait};
+  use crate::encoders::MockEncoder;
   use crate::tests::entity::TestEntity;
   use crate::tests::error::{MockBrokerErr, MockEncErr};
-  use crate::traits::MockPubCtxTrait;
 
   use super::*;
 
@@ -184,7 +184,7 @@ mod tests {
     let entity = TestEntity::new(1, "Test Name");
     let subject = "test.subject";
     let correct = Bytes::from("serialized bytes");
-    let mut ctx = MockPubCtxTrait::new();
+    let mut ctx = MockPubBrokerTrait::new();
     ctx
       .expect_publish()
       .with(eq(subject), eq(correct.clone()))
@@ -207,7 +207,7 @@ mod tests {
     let entity = TestEntity::new(1, "Test Name");
     let subject = "test.subject.error";
     let correct = Bytes::from("serialized bytes");
-    let mut ctx = MockPubCtxTrait::new();
+    let mut ctx = MockPubBrokerTrait::new();
     ctx
       .expect_publish()
       .with(eq(subject), eq(correct.clone()))

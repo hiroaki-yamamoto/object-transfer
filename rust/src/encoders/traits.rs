@@ -57,7 +57,7 @@ use crate::tests::{
 /// ```rust
 /// use bytes::Bytes;
 /// use serde::Serialize;
-/// use object_transfer::encoder::Encoder;
+/// use object_transfer::encoders::Encoder;
 ///
 /// #[derive(Serialize)]
 /// struct MyType {
@@ -83,7 +83,7 @@ use crate::tests::{
 /// ```rust,no_run
 /// # use bytes::Bytes;
 /// # use serde::Serialize;
-/// # use object_transfer::encoder::Encoder;
+/// # use object_transfer::encoders::Encoder;
 /// # #[derive(Serialize)]
 /// # struct MyType { id: u32, name: String }
 /// # struct PlainTextEncoder;
@@ -149,7 +149,7 @@ pub trait Encoder {
 /// ```rust
 /// use bytes::Bytes;
 /// use serde::Deserialize;
-/// use object_transfer::encoder::Decoder;
+/// use object_transfer::encoders::Decoder;
 /// use std::num::ParseIntError;
 ///
 /// #[derive(Deserialize)]

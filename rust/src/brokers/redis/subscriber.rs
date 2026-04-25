@@ -14,7 +14,9 @@ use ::redis::streams::{
 };
 
 use crate::errors::{BrokerError, UnSubError};
-use crate::traits::{AckTrait, SubCtxTrait, UnSubTrait};
+use crate::traits::{AckTrait, UnSubTrait};
+
+use super::super::traits::SubBrokerTrait;
 
 use super::ack::Ack;
 use super::config::SubscriberConfig;
@@ -95,7 +97,7 @@ impl Subscriber {
 }
 
 #[async_trait]
-impl SubCtxTrait for Subscriber {
+impl SubBrokerTrait for Subscriber {
   /// Subscribes to a Redis stream and returns a stream of messages.
   ///
   /// Creates a consumer group if it doesn't exist, then continuously reads messages

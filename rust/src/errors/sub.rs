@@ -1,8 +1,8 @@
 use ::serde::de::Error as DeErr;
 use ::thiserror::Error;
 
+use super::BrokerError;
 use super::ack::AckError;
-use super::broker::BrokerError;
 use super::decode::DecodeError;
 
 /// Error type for subscription operations in the messaging system.

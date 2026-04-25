@@ -1,6 +1,6 @@
 use ::thiserror::Error;
 
-use super::broker::BrokerError;
+use super::BrokerError;
 
 /// Error type for unsubscribe operations in the messaging system.
 #[derive(Error, Debug)]

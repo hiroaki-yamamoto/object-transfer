@@ -6,15 +6,16 @@ use futures::stream::BoxStream;
 use futures::{TryFutureExt, TryStreamExt};
 use serde::de::{DeserializeOwned, Error as DeErr};
 
-use crate::encoder::Decoder;
+use crate::brokers::SubBrokerTrait;
+use crate::encoders::Decoder;
 use crate::errors::{DecodeError, SubError, UnSubError};
 use crate::options::SubOpt;
-use crate::traits::{AckTrait, SubCtxTrait, SubTrait, UnSubTrait};
+use crate::traits::{AckTrait, SubTrait, UnSubTrait};
 
 /// Subscriber wrapper that deserializes messages and optionally acknowledges them.
 ///
 /// The subscriber uses a pluggable [`Decoder`] to deserialize messages,
-/// relies on a [`SubCtxTrait`] implementation for message retrieval, and optionally
+/// relies on a [`SubBrokerTrait`] implementation for message retrieval, and optionally
 /// acknowledges them based on [`SubOpt`] settings. The decoder is passed at construction time,
 /// enabling runtime format selection.
 ///
@@ -25,10 +26,10 @@ use crate::traits::{AckTrait, SubCtxTrait, SubTrait, UnSubTrait};
 /// use futures::StreamExt;
 /// use serde::Deserialize;
 /// use object_transfer::{
-///   encoder::JSONDecoder,
+///   encoders::JSONDecoder,
 ///   Sub, SubOpt,
 /// };
-/// use object_transfer::nats::{SubFetcherOpt, SubFetcher};
+/// use object_transfer::brokers::nats::{SubFetcherOpt, SubFetcher};
 /// use object_transfer::traits::{SubTrait};
 ///
 /// #[derive(Deserialize, Debug)]
@@ -77,7 +78,7 @@ use crate::traits::{AckTrait, SubCtxTrait, SubTrait, UnSubTrait};
 /// use bytes::Bytes;
 /// use serde::de::DeserializeOwned;
 /// use object_transfer::{
-///   encoder::Decoder,
+///   encoders::Decoder,
 ///   Sub, SubOpt,
 ///   traits::SubTrait,
 /// };
@@ -120,7 +121,7 @@ use crate::traits::{AckTrait, SubCtxTrait, SubTrait, UnSubTrait};
 /// }
 /// ```
 pub struct Sub<T, DecodeErrorType: DeErr + Send + Sync> {
-  ctx: Arc<dyn SubCtxTrait + Send + Sync>,
+  ctx: Arc<dyn SubBrokerTrait + Send + Sync>,
   unsub: Arc<dyn UnSubTrait + Send + Sync>,
   decoder: Arc<dyn Decoder<Item = T, Error = DecodeErrorType> + Send + Sync>,
   options: SubOpt,
@@ -153,7 +154,7 @@ where
   /// The generic `DecodeErrorType` type parameter is the error type of your decoder. Different decoders
   /// can use different error types (e.g., `serde_json::Error`, custom parse error types).
   pub fn new(
-    ctx: Arc<dyn SubCtxTrait + Send + Sync>,
+    ctx: Arc<dyn SubBrokerTrait + Send + Sync>,
     unsub: Arc<dyn UnSubTrait + Send + Sync>,
     decoder: Arc<dyn Decoder<Item = T, Error = DecodeErrorType> + Send + Sync>,
     options: SubOpt,
@@ -224,7 +225,7 @@ mod test {
   use ::serde_json::{from_slice as parse, to_vec as jsonify};
 
   use crate::UnSubNoop;
-  use crate::encoder::MockDecoder;
+  use crate::encoders::MockDecoder;
   use crate::errors::AckError;
   use crate::tests::{
     entity::TestEntity, error::MockDeErr, subscribe::SubscribeMock,
@@ -262,7 +263,7 @@ mod test {
         let entity: TestEntity = parse(&bytes).unwrap();
         Ok(entity)
       });
-    let ctx: Arc<dyn SubCtxTrait + Send + Sync> =
+    let ctx: Arc<dyn SubBrokerTrait + Send + Sync> =
       Arc::new(SubscribeMock::new(data));
     let options = SubOpt::new().auto_ack(auto_ack);
     let subscribe: Sub<TestEntity, _> = Sub::new(
@@ -303,7 +304,7 @@ mod test {
         .once();
       Arc::new(ack_mock)
     }));
-    let ctx: Arc<dyn SubCtxTrait + Send + Sync> =
+    let ctx: Arc<dyn SubBrokerTrait + Send + Sync> =
       Arc::new(SubscribeMock::new(data));
     let mut decoder = MockDecoder::new();
     decoder.expect_decode().never();

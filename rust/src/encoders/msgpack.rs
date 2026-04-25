@@ -7,8 +7,8 @@
 //! # Example
 //!
 //! ```rust
-//! use object_transfer::encoder::{Encoder, Decoder};
-//! use object_transfer::encoder::msgpack::{
+//! use object_transfer::encoders::{Encoder, Decoder};
+//! use object_transfer::encoders::msgpack::{
 //!   Encoder as MsgPackEncoder,
 //!   Decoder as MsgPackDecoder
 //! };
@@ -52,8 +52,8 @@ use super::traits::{Decoder as DecoderTrait, Encoder as EncoderTrait};
 /// # Example
 ///
 /// ```rust
-/// use object_transfer::encoder::Encoder;
-/// use object_transfer::encoder::msgpack::{
+/// use object_transfer::encoders::Encoder;
+/// use object_transfer::encoders::msgpack::{
 ///   Encoder as MsgPackEncoder,
 ///   Decoder as MsgPackDecoder
 /// };
@@ -87,7 +87,7 @@ impl<T: Serialize + Send + Sync> Encoder<T> {
   /// # Example
   ///
   /// ```rust
-  /// use object_transfer::encoder::msgpack::Encoder as MsgPackEncoder;
+  /// use object_transfer::encoders::msgpack::Encoder as MsgPackEncoder;
   /// use serde::Serialize;
   ///
   /// #[derive(Serialize)]
@@ -122,8 +122,8 @@ impl<T: Serialize + Send + Sync> EncoderTrait for Encoder<T> {
   /// # Example
   ///
   /// ```rust
-  /// use object_transfer::encoder::{Encoder, Encoder as EncoderTrait};
-  /// use object_transfer::encoder::msgpack::{
+  /// use object_transfer::encoders::{Encoder, Decoder};
+  /// use object_transfer::encoders::msgpack::{
   ///   Encoder as MsgPackEncoder,
   ///   Decoder as MsgPackDecoder
   /// };
@@ -157,8 +157,8 @@ impl<T: Serialize + Send + Sync> EncoderTrait for Encoder<T> {
 /// # Example
 ///
 /// ```rust
-/// use object_transfer::encoder::{Decoder, Encoder};
-/// use object_transfer::encoder::msgpack::{
+/// use object_transfer::encoders::{Encoder, Decoder};
+/// use object_transfer::encoders::msgpack::{
 ///   Encoder as MsgPackEncoder,
 ///   Decoder as MsgPackDecoder
 /// };
@@ -197,7 +197,7 @@ impl<T: DeserializeOwned + Send + Sync> Decoder<T> {
   /// # Example
   ///
   /// ```rust
-  /// use object_transfer::encoder::msgpack::Decoder as MsgPackDecoder;
+  /// use object_transfer::encoders::msgpack::Decoder as MsgPackDecoder;
   /// use serde::Deserialize;
   ///
   /// #[derive(Deserialize)]

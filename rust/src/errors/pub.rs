@@ -1,7 +1,7 @@
 use ::serde::ser::Error as EncErr;
 use ::thiserror::Error;
 
-use super::broker::BrokerError;
+use super::BrokerError;
 use super::encode::EncodeError;
 
 /// Error type for publishing operations in the messaging system.

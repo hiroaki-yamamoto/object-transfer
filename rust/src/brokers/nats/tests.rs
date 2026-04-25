@@ -3,17 +3,18 @@ use ::std::sync::Arc;
 use futures::StreamExt;
 use serde::{de::Error as DeErr, ser::Error as SeErr};
 
-use crate::encoder::{
+use crate::encoders::{
   Decoder as IDecoder, Encoder as IEncoder, JSONDecoder, JSONEncoder,
   MessagePackDecoder, MessagePackEncoder,
 };
-use crate::nats::{SubFetcher, SubFetcherOpt};
 use crate::options::SubOpt;
 use crate::tests::entity::TestEntity;
 use crate::{Pub, PubTrait, Sub, SubTrait, UnSubTrait};
 use async_nats::jetstream::{
   consumer::pull::Config as PullConfig, stream::Config as StreamConfig,
 };
+
+use super::super::nats::{SubFetcher, SubFetcherOpt};
 
 async fn setup<SE: SeErr + Send + Sync, DE: DeErr + Send + Sync>(
   name: impl Into<String>,

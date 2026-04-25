@@ -19,7 +19,7 @@ use super::traits::{Decoder as DecoderTrait, Encoder as EncoderTrait};
 ///
 /// ```
 /// use serde::Serialize;
-/// use object_transfer::encoder::{Encoder, JSONEncoder};
+/// use object_transfer::encoders::{Encoder, JSONEncoder};
 ///
 /// #[derive(Serialize)]
 /// struct User {
@@ -79,7 +79,7 @@ impl<T: Serialize + Send + Sync> EncoderTrait for Encoder<T> {
 ///
 /// ```
 /// use serde::Deserialize;
-/// use object_transfer::encoder::{JSONDecoder, Decoder};
+/// use object_transfer::encoders::{JSONDecoder, Decoder};
 /// use bytes::Bytes;
 ///
 /// #[derive(Deserialize)]

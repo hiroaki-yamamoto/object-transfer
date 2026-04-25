@@ -6,10 +6,13 @@ use ::bytes::Bytes;
 use ::futures::stream::BoxStream;
 use ::futures::{StreamExt, TryFutureExt};
 
+use crate::errors::{BrokerError, UnSubError};
+use crate::traits::{AckTrait, UnSubTrait};
+
+use super::super::traits::SubBrokerTrait;
+
 use super::errors::NatsSubFetcherError;
 use super::options::SubFetcherOpt;
-use crate::errors::{BrokerError, UnSubError};
-use crate::traits::{AckTrait, SubCtxTrait, UnSubTrait};
 
 /// Fetches pull-based JetStream messages using the configured stream options.
 #[derive(Debug)]
@@ -34,7 +37,7 @@ impl SubFetcher {
 }
 
 #[async_trait]
-impl SubCtxTrait for SubFetcher {
+impl SubBrokerTrait for SubFetcher {
   /// Stream messages from the pull consumer, yielding their payloads along
   /// with the associated acknowledgment handles.
   async fn subscribe(

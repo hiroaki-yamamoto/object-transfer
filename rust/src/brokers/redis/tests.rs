@@ -5,11 +5,12 @@ use futures::StreamExt;
 use serde::{de::Error as DeErr, ser::Error as SeErr};
 
 use crate::options::SubOpt;
-use crate::redis::{Publisher, PublisherConfig, Subscriber, SubscriberConfig};
 use crate::tests::entity::TestEntity;
 use crate::{Pub, PubTrait, Sub, SubTrait, UnSubTrait};
 
-use crate::encoder::{
+use super::{Publisher, PublisherConfig, Subscriber, SubscriberConfig};
+
+use crate::encoders::{
   Decoder as IDecoder, Encoder as IEncoder, JSONDecoder, JSONEncoder,
   MessagePackDecoder, MessagePackEncoder,
 };
