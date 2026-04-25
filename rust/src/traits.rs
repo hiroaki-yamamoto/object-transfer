@@ -1,115 +1,47 @@
-//! Core trait abstractions for pub/sub messaging with typed and untyped interfaces.
+//! Core trait abstractions for publish-subscribe messaging with strongly-typed items.
 //!
-//! This module provides a set of traits that abstract over different messaging
-//! backends and transport layers. The traits are organized into two main
-//! categories:
+//! This module provides a set of traits that define the interfaces for publishing and subscribing
+//! to typed messages across different messaging backends (NATS, Redis, etc.). These traits abstract
+//! away the complexity of serialization, transport, and acknowledgment handling, allowing you to
+//! write backend-agnostic code.
 //!
-//! ## Typed Traits
+//! # Core Traits
 //!
-//! These traits work with strongly-typed items:
-//! - [`PubTrait`]: Publish strongly-typed items that implement [`serde::Serialize`].
-//! - [`SubTrait`]: Subscribe to a stream of strongly-typed items that implement
-//!   [`serde::de::DeserializeOwned`].
-//! - [`AckTrait`]: Acknowledge receipt of a message.
-//! - [`UnSubTrait`]: Cancel a subscription.
+//! - [`PubTrait`]: Publish strongly-typed items that implement [`serde::Serialize`]. Handles encoding
+//!   and delivery to the backing message broker.
+//! - [`SubTrait`]: Subscribe to a stream of strongly-typed items that implement [`serde::de::DeserializeOwned`].
+//!   Returns a stream of decoded messages paired with acknowledgment handles.
+//! - [`AckTrait`]: Acknowledge receipt of a message after it has been successfully processed.
+//! - [`UnSubTrait`]: Cancel an active subscription gracefully.
 //!
-//! ## Untyped (Context) Traits
+//! # Dispatch Patterns
 //!
-//! These traits work with raw byte payloads and topics:
-//! - [`PubCtxTrait`]: Publish raw byte payloads to specific topics.
-//! - [`SubCtxTrait`]: Subscribe to a stream of raw byte messages from a topic.
+//! The library supports two primary usage patterns for different performance and flexibility trade-offs:
 //!
-//! ## Additional Types
+//! ## Static Dispatch (Recommended)
 //!
-//! - [`crate::SubOpt`]: Configure subscription options like auto-acknowledgment.
+//! Use generic trait bounds to maintain full type information at compile time. This enables
+//! monomorphization, inlining, and zero runtime overhead. Ideal for performance-critical paths.
 //!
-//! # Dynamic Dispatch Usage
-//!
-//! These traits are designed to work seamlessly with dynamic dispatch (trait objects),
-//! enabling flexible, runtime polymorphism. Here are common patterns:
-//!
-//! ## Publishing with Dynamic Dispatch
-//!
-//! ```rust
-//! use std::sync::Arc;
-//! use object_transfer::traits::PubTrait;
-//! use serde::Serialize;
-//!
-//! #[derive(Serialize)]
-//! struct MyMessage {
-//!     data: String,
-//! }
-//!
-//! async fn send_message(publisher: Arc<dyn PubTrait<Item = MyMessage, EncodeErr = serde_json::Error>>) {
-//!     let msg = MyMessage { data: "hello".to_string() };
-//!     publisher.publish(&msg).await.ok();
-//! }
-//! ```
-//!
-//! ## Subscribing with Dynamic Dispatch
-//!
-//! ```rust
-//! use std::sync::Arc;
-//! use object_transfer::traits::{SubTrait, AckTrait};
-//! use serde::Deserialize;
-//! use futures::stream::StreamExt;
-//!
-//! #[derive(Deserialize)]
-//! struct MyMessage {
-//!     data: String,
-//! }
-//!
-//! async fn receive_messages(
-//!     subscriber: Arc<dyn SubTrait<Item = MyMessage, DecodeErr = serde_json::Error>>
-//! ) {
-//!     if let Ok(mut stream) = subscriber.subscribe().await {
-//!         while let Some(Ok((msg, ack))) = stream.next().await {
-//!             // Process the message
-//!             let _ = ack.ack().await;
-//!         }
-//!     }
-//! }
-//! ```
-//!
-//! ## Working with Raw Payloads
-//!
-//! For scenarios requiring lower-level control, use context traits:
-//!
-//! ```rust
-//! use std::sync::Arc;
-//! use object_transfer::traits::PubCtxTrait;
-//! use bytes::Bytes;
-//!
-//! async fn send_raw(ctx: Arc<dyn PubCtxTrait>) {
-//!     let payload = Bytes::from("raw data");
-//!     ctx.publish("topic/name", payload).await.ok();
-//! }
-//! ```
-//!
-//! # Static Dispatch Usage
-//!
-//! For maximum performance and compile-time guarantees, use static dispatch with
-//! generic trait bounds. This approach leverages monomorphization to eliminate
-//! runtime overhead and enable inlining.
-//!
-//! ## Publishing with Static Dispatch
+//! ### Publishing with Static Dispatch
 //!
 //! ```rust
 //! use object_transfer::traits::PubTrait;
 //! use serde::Serialize;
 //!
 //! #[derive(Serialize)]
-//! struct MyMessage {
-//!     data: String,
+//! struct Event {
+//!     id: u32,
+//!     message: String,
 //! }
 //!
-//! async fn send_message<P: PubTrait<Item = MyMessage>>(publisher: &P) {
-//!     let msg = MyMessage { data: "hello".to_string() };
-//!     publisher.publish(&msg).await.ok();
+//! async fn send_event<P: PubTrait<Item = Event>>(publisher: &P, event: &Event) -> Result<(), Box<dyn std::error::Error>> {
+//!     publisher.publish(event).await?;
+//!     Ok(())
 //! }
 //! ```
 //!
-//! ## Subscribing with Static Dispatch
+//! ### Subscribing with Static Dispatch
 //!
 //! ```rust
 //! use object_transfer::traits::{SubTrait, AckTrait};
@@ -117,50 +49,135 @@
 //! use futures::stream::StreamExt;
 //!
 //! #[derive(Deserialize)]
-//! struct MyMessage {
-//!     data: String,
+//! struct Event {
+//!     id: u32,
+//!     message: String,
 //! }
 //!
-//! async fn receive_messages<S: SubTrait<Item = MyMessage>>(subscriber: &S) {
-//!     if let Ok(mut stream) = subscriber.subscribe().await {
-//!         while let Some(Ok((msg, ack))) = stream.next().await {
-//!             // Process the message
-//!             let _ = ack.ack().await;
+//! async fn receive_events<S: SubTrait<Item = Event>>(
+//!     subscriber: &S,
+//! ) -> Result<(), Box<dyn std::error::Error>> {
+//!     let mut stream = subscriber.subscribe().await?;
+//!     while let Some(result) = stream.next().await {
+//!         match result {
+//!             Ok((event, ack)) => {
+//!                 # println!("Received: {:?}", event);
+//!                 ack.ack().await.ok();
+//!             }
+//!             Err(e) => eprintln!("Error: {:?}", e),
 //!         }
 //!     }
+//!     Ok(())
 //! }
 //! ```
 //!
-//! ## Generic Over Multiple Trait Implementations
+//! ### Relay Pattern with Generic Implementations
 //!
-//! Static dispatch excels when working with multiple trait implementations:
+//! A common pattern is to relay messages between publishers and subscribers:
 //!
 //! ```rust
-//! use object_transfer::traits::{PubTrait, SubTrait, AckTrait};
+//! use object_transfer::traits::{PubTrait, SubTrait};
 //! use serde::{Serialize, Deserialize};
 //! use futures::stream::StreamExt;
 //!
-//! #[derive(Serialize, Deserialize)]
-//! struct Event {
+//! #[derive(Serialize, Deserialize, Clone)]
+//! struct Message {
 //!     id: u64,
+//!     content: String,
 //! }
 //!
-//! async fn relay_events<P, S>(publisher: &P, subscriber: &S)
+//! async fn relay<P, S>(publisher: &P, subscriber: &S) -> Result<(), Box<dyn std::error::Error>>
 //! where
-//!     P: PubTrait<Item = Event>,
-//!     S: SubTrait<Item = Event>,
+//!     P: PubTrait<Item = Message>,
+//!     S: SubTrait<Item = Message>,
 //! {
-//!     if let Ok(mut stream) = subscriber.subscribe().await {
-//!         while let Some(Ok((event, ack))) = stream.next().await {
-//!             publisher.publish(&event).await.ok();
-//!             let _ = ack.ack().await;
+//!     let mut stream = subscriber.subscribe().await?;
+//!     while let Some(result) = stream.next().await {
+//!         if let Ok((msg, ack)) = result {
+//!             publisher.publish(&msg).await.ok();
+//!             ack.ack().await.ok();
 //!         }
 //!     }
+//!     Ok(())
 //! }
 //! ```
 //!
+//! ## Dynamic Dispatch (Trait Objects)
+//!
+//! Use trait objects for runtime polymorphism when the concrete type is unknown or must be
+//! determined at runtime. This introduces a small runtime cost but provides maximum flexibility.
+//! This pattern is common in plugin systems or when accepting multiple publisher/subscriber implementations.
+//!
+//! ### Publishing with Dynamic Dispatch
+//!
+//! ```rust
+//! use std::sync::Arc;
+//! use object_transfer::traits::PubTrait;
+//! use serde::Serialize;
+//!
+//! #[derive(Serialize)]
+//! struct Event {
+//!     id: u32,
+//!     data: String,
+//! }
+//!
+//! async fn send_via_any_publisher(
+//!     publisher: Arc<dyn PubTrait<Item = Event, EncodeErr = serde_json::Error>>,
+//!     event: &Event,
+//! ) -> Result<(), Box<dyn std::error::Error>> {
+//!     publisher.publish(event).await?;
+//!     Ok(())
+//! }
+//! ```
+//!
+//! ### Subscribing with Dynamic Dispatch
+//!
+//! ```rust
+//! use std::sync::Arc;
+//! use object_transfer::traits::{SubTrait, AckTrait};
+//! use serde::Deserialize;
+//! use futures::stream::StreamExt;
+//!
+//! #[derive(Deserialize)]
+//! struct Event {
+//!     id: u32,
+//!     data: String,
+//! }
+//!
+//! async fn receive_via_any_subscriber(
+//!     subscriber: Arc<dyn SubTrait<Item = Event, DecodeErr = serde_json::Error>>,
+//! ) -> Result<(), Box<dyn std::error::Error>> {
+//!     let mut stream = subscriber.subscribe().await?;
+//!     while let Some(result) = stream.next().await {
+//!         match result {
+//!             Ok((event, ack)) => {
+//!                 # println!("Received: {:?}", event);
+//!                 ack.ack().await.ok();
+//!             }
+//!             Err(e) => eprintln!("Error: {:?}", e),
+//!         }
+//!     }
+//!     Ok(())
+//! }
+//! ```
+//!
+//! # Integration with Concrete Backends
+//!
+//! Concrete implementations of these traits are provided for different backends:
+//! - NATS: See the [`crate::nats`] module (requires `nats` feature)
+//! - Redis: See the [`crate::redis`] module (requires `redis` feature)
+//!
+//! # Error Handling
+//!
+//! Operations may fail for various reasons (encoding errors, network issues, etc.).
+//! Each trait method returns a `Result` with a specific error type:
+//!
+//! - [`PubTrait::publish()`] returns [`crate::errors::PubError<Self::EncodeErr>`]
+//! - [`SubTrait::subscribe()`] returns [`crate::errors::SubError<Self::DecodeErr>`]
+//! - [`AckTrait::ack()`] returns [`crate::errors::AckError`]
+//! - [`UnSubTrait::unsubscribe()`] returns [`crate::errors::UnSubError`]
+//!
 
-use ::bytes::Bytes;
 use ::std::sync::Arc;
 
 use ::async_trait::async_trait;
@@ -170,7 +187,7 @@ use ::serde::{
   ser::{Error as EncErr, Serialize},
 };
 
-use crate::errors::{AckError, BrokerError, PubError, SubError, UnSubError};
+use crate::errors::{AckError, PubError, SubError, UnSubError};
 
 #[cfg(test)]
 use crate::tests::{entity::TestEntity, error::MockDeErr, error::MockEncErr};
@@ -227,33 +244,6 @@ pub trait UnSubTrait {
   async fn unsubscribe(&self) -> Result<(), UnSubError>;
 }
 
-/// Context capable of publishing raw byte payloads.
-#[cfg_attr(test, automock)]
-#[async_trait]
-pub trait PubCtxTrait {
-  /// Publish a raw payload to a subject on the underlying broker.
-  ///
-  /// # Parameters
-  /// - `topic`: Subject or channel name the payload should be delivered to.
-  /// - `payload`: Serialized bytes to forward to the transport.
-  async fn publish(
-    &self,
-    topic: &str,
-    payload: Bytes,
-  ) -> Result<(), BrokerError>;
-}
-
-/// Context capable of producing a stream of raw messages with ack handles.
-#[async_trait]
-pub trait SubCtxTrait {
-  async fn subscribe(
-    &self,
-  ) -> Result<
-    BoxStream<Result<(Bytes, Arc<dyn AckTrait + Send + Sync>), BrokerError>>,
-    BrokerError,
-  >;
-}
-
 #[cfg(test)]
 mod test {
   use ::static_assertions::assert_obj_safe;
@@ -277,15 +267,5 @@ mod test {
   #[test]
   fn test_unsub_safety() {
     assert_obj_safe!(UnSubTrait);
-  }
-
-  #[test]
-  fn test_pubctx_safety() {
-    assert_obj_safe!(PubCtxTrait);
-  }
-
-  #[test]
-  fn test_subctx_safety() {
-    assert_obj_safe!(SubCtxTrait);
   }
 }

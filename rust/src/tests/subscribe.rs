@@ -5,8 +5,9 @@ use ::bytes::Bytes;
 use ::futures::stream::{BoxStream, StreamExt, iter};
 use ::serde::de::DeserializeOwned;
 
+use crate::brokers::SubBrokerTrait;
 use crate::errors::{BrokerError, SubError};
-use crate::traits::{AckTrait, SubCtxTrait, SubTrait};
+use crate::traits::{AckTrait, SubTrait};
 
 use super::error::MockDeErr;
 
@@ -44,7 +45,7 @@ where
 }
 
 #[async_trait]
-impl SubCtxTrait for SubscribeMock<Bytes> {
+impl SubBrokerTrait for SubscribeMock<Bytes> {
   async fn subscribe(
     &self,
   ) -> Result<

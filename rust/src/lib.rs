@@ -84,6 +84,7 @@
 //! [Crates.io]: https://crates.io/crates/object_transfer
 
 mod ack_noop;
+pub mod brokers;
 pub mod encoder;
 pub mod errors;
 #[cfg(feature = "nats")]
