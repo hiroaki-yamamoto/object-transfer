@@ -29,7 +29,7 @@ use crate::traits::{AckTrait, SubTrait, UnSubTrait};
 ///   encoder::JSONDecoder,
 ///   Sub, SubOpt,
 /// };
-/// use object_transfer::nats::{SubFetcherOpt, SubFetcher};
+/// use object_transfer::brokers::nats::{SubFetcherOpt, SubFetcher};
 /// use object_transfer::traits::{SubTrait};
 ///
 /// #[derive(Deserialize, Debug)]

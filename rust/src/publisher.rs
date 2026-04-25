@@ -225,7 +225,8 @@ mod tests {
     let err_msg = res.unwrap_err().to_string();
     assert_eq!(
       err_msg,
-      PubError::<MockEncErr>::BrokerError(MockBrokerErr.into()).to_string()
+      PubError::<MockEncErr>::BrokerError(BrokerError::new(MockBrokerErr))
+        .to_string()
     );
   }
 }

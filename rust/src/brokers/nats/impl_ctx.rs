@@ -10,11 +10,12 @@ use ::futures::stream::BoxStream;
 use ::futures::{StreamExt, TryFutureExt, TryStreamExt};
 use ::std::boxed::Box;
 
+use super::super::traits::{PubBrokerTrait, SubBrokerTrait};
 use crate::errors::BrokerError;
-use crate::traits::{AckTrait, PubCtxTrait, SubCtxTrait};
+use crate::traits::AckTrait;
 
 #[async_trait]
-impl PubCtxTrait for Context {
+impl PubBrokerTrait for Context {
   async fn publish(
     &self,
     topic: &str,
@@ -33,7 +34,7 @@ impl PubCtxTrait for Context {
 macro_rules! impl_sub_ctx_trait {
   ($cls_name: ty) => {
     #[async_trait]
-    impl SubCtxTrait for $cls_name {
+    impl SubBrokerTrait for $cls_name {
       async fn subscribe(
         &self,
       ) -> Result<

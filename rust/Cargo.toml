@@ -17,7 +17,7 @@ nats = ["dep:async-nats"]
 redis = ["dep:redis", "redis?/aio", "redis?/tokio-comp", "redis?/streams"]
 json = ["dep:serde_json"]
 msgpack = ["dep:rmp-serde"]
-default = ["nats", "redis", "json", "msgpack"]
+default = []
 
 
 [dependencies]

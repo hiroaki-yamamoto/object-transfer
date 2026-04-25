@@ -5,8 +5,8 @@ use ::redis::{
   AsyncTypedCommands, aio::MultiplexedConnection, streams::StreamMaxlen,
 };
 
+use super::super::traits::PubBrokerTrait;
 use crate::errors::BrokerError;
-use crate::traits::PubCtxTrait;
 
 use super::PublisherConfig;
 use super::errors::PublishError;
@@ -16,7 +16,7 @@ use super::group_make::make_stream_group;
 ///
 /// The `Publisher` struct provides functionality to publish messages to Redis streams
 /// with support for consumer groups and stream size management. It implements the
-/// `PubCtxTrait` to provide a consistent interface for publishing operations.
+/// `PubBrokerTrait` to provide a consistent interface for publishing operations.
 #[derive(Clone)]
 pub struct Publisher {
   /// The multiplexed Redis connection used for publishing messages.
@@ -45,7 +45,7 @@ impl Publisher {
 }
 
 #[async_trait]
-impl PubCtxTrait for Publisher {
+impl PubBrokerTrait for Publisher {
   async fn publish(
     &self,
     topic: &str,

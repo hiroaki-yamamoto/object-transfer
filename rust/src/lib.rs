@@ -87,12 +87,8 @@ mod ack_noop;
 pub mod brokers;
 pub mod encoder;
 pub mod errors;
-#[cfg(feature = "nats")]
-pub mod nats;
 mod options;
 mod publisher;
-#[cfg(feature = "redis")]
-pub mod redis;
 mod subscriber;
 pub mod traits;
 mod unsub_noop;

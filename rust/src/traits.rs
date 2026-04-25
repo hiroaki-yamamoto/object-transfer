@@ -35,7 +35,7 @@
 //!     message: String,
 //! }
 //!
-//! async fn send_event<P: PubTrait<Item = Event>>(publisher: &P, event: &Event) -> Result<(), Box<dyn std::error::Error>> {
+//! async fn send_event<P: PubTrait<Item = Event> + Send + Sync + 'static>(publisher: &P, event: &Event) -> Result<(), Box<dyn std::error::Error>> {
 //!     publisher.publish(event).await?;
 //!     Ok(())
 //! }
@@ -48,13 +48,13 @@
 //! use serde::Deserialize;
 //! use futures::stream::StreamExt;
 //!
-//! #[derive(Deserialize)]
+//! #[derive(Deserialize, Debug)]
 //! struct Event {
 //!     id: u32,
 //!     message: String,
 //! }
 //!
-//! async fn receive_events<S: SubTrait<Item = Event>>(
+//! async fn receive_events<S: SubTrait<Item = Event> + Send + Sync + 'static>(
 //!     subscriber: &S,
 //! ) -> Result<(), Box<dyn std::error::Error>> {
 //!     let mut stream = subscriber.subscribe().await?;
@@ -88,8 +88,8 @@
 //!
 //! async fn relay<P, S>(publisher: &P, subscriber: &S) -> Result<(), Box<dyn std::error::Error>>
 //! where
-//!     P: PubTrait<Item = Message>,
-//!     S: SubTrait<Item = Message>,
+//!     P: PubTrait<Item = Message> + Send + Sync + 'static,
+//!     S: SubTrait<Item = Message> + Send + Sync + 'static,
 //! {
 //!     let mut stream = subscriber.subscribe().await?;
 //!     while let Some(result) = stream.next().await {
@@ -138,7 +138,7 @@
 //! use serde::Deserialize;
 //! use futures::stream::StreamExt;
 //!
-//! #[derive(Deserialize)]
+//! #[derive(Deserialize, Debug)]
 //! struct Event {
 //!     id: u32,
 //!     data: String,
