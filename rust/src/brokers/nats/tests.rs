@@ -3,7 +3,7 @@ use ::std::sync::Arc;
 use futures::StreamExt;
 use serde::{de::Error as DeErr, ser::Error as SeErr};
 
-use crate::encoder::{
+use crate::encoders::{
   Decoder as IDecoder, Encoder as IEncoder, JSONDecoder, JSONEncoder,
   MessagePackDecoder, MessagePackEncoder,
 };

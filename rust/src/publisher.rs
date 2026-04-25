@@ -6,7 +6,7 @@ use serde::Serialize;
 use serde::ser::Error as EncErr;
 
 use crate::brokers::PubBrokerTrait;
-use crate::encoder::Encoder;
+use crate::encoders::Encoder;
 use crate::errors::{EncodeError, PubError};
 use crate::traits::PubTrait;
 
@@ -23,7 +23,7 @@ use crate::traits::PubTrait;
 /// use std::sync::Arc;
 /// use serde::Serialize;
 /// use object_transfer::{
-///   encoder::JSONEncoder,
+///   encoders::JSONEncoder,
 ///   Pub,
 ///   traits::PubTrait,
 /// };
@@ -63,7 +63,7 @@ use crate::traits::PubTrait;
 /// use serde::Serialize;
 /// use bytes::Bytes;
 /// use object_transfer::{
-///   encoder::Encoder,
+///   encoders::Encoder,
 ///   Pub,
 ///   traits::PubTrait,
 /// };
@@ -173,7 +173,7 @@ mod tests {
   use ::mockall::predicate::*;
 
   use crate::brokers::{errors::BrokerError, traits::MockPubBrokerTrait};
-  use crate::encoder::MockEncoder;
+  use crate::encoders::MockEncoder;
   use crate::tests::entity::TestEntity;
   use crate::tests::error::{MockBrokerErr, MockEncErr};
 

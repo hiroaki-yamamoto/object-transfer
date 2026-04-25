@@ -7,7 +7,7 @@
 //! # Pluggable Encoder/Decoder Architecture
 //!
 //! A key feature of this library is its **"any-format"** design: you can use any
-//! serialization format by implementing the [`encoder::Encoder`] and [`encoder::Decoder`] traits.
+//! serialization format by implementing the [`encoders::Encoder`] and [`encoders::Decoder`] traits.
 //! The library doesn't restrict you to built-in formats—JSON, MessagePack, Protocol Buffers,
 //! CBOR, or custom formats all work seamlessly.
 //!
@@ -17,7 +17,7 @@
 //! use std::sync::Arc;
 //! use serde::{Serialize, Deserialize};
 //! use object_transfer::{
-//!   encoder::{JSONEncoder, JSONDecoder},
+//!   encoders::{JSONEncoder, JSONDecoder},
 //!   Pub, Sub, SubOpt,
 //!   traits::PubTrait,
 //! };
@@ -48,12 +48,12 @@
 //!
 //! ## Implementing Custom Formats
 //!
-//! Implement [`encoder::Encoder`] and [`encoder::Decoder`] for your format:
+//! Implement [`encoders::Encoder`] and [`encoders::Decoder`] for your format:
 //!
 //! ```rust
 //! use bytes::Bytes;
 //! use serde::Serialize;
-//! use object_transfer::encoder::Encoder;
+//! use object_transfer::encoders::Encoder;
 //!
 //! struct MyFormat;
 //! #[derive(serde::Serialize)]
@@ -85,7 +85,7 @@
 
 mod ack_noop;
 pub mod brokers;
-pub mod encoder;
+pub mod encoders;
 pub mod errors;
 mod options;
 mod publisher;

@@ -6,7 +6,7 @@
 //!
 //! # Overview
 //!
-//! The encoder module defines two primary traits:
+//! The encoders module defines two primary traits:
 //!
 //! - [`Encoder`] - Converts Rust types into byte sequences
 //! - [`Decoder`] - Converts byte sequences back into Rust types
@@ -42,9 +42,9 @@
 //!
 //! ```rust,no_run
 //! use serde::{Serialize, Deserialize};
-//! use object_transfer::encoder::{Encoder, Decoder};
+//! use object_transfer::encoders::{Encoder, Decoder};
 //! #[cfg(feature = "json")]
-//! use object_transfer::encoder::{JSONEncoder, JSONDecoder};
+//! use object_transfer::encoders::{JSONEncoder, JSONDecoder};
 //!
 //! #[derive(Serialize, Deserialize)]
 //! struct Event {

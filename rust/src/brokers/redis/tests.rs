@@ -10,7 +10,7 @@ use crate::{Pub, PubTrait, Sub, SubTrait, UnSubTrait};
 
 use super::{Publisher, PublisherConfig, Subscriber, SubscriberConfig};
 
-use crate::encoder::{
+use crate::encoders::{
   Decoder as IDecoder, Encoder as IEncoder, JSONDecoder, JSONEncoder,
   MessagePackDecoder, MessagePackEncoder,
 };

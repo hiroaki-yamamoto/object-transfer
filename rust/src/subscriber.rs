@@ -7,7 +7,7 @@ use futures::{TryFutureExt, TryStreamExt};
 use serde::de::{DeserializeOwned, Error as DeErr};
 
 use crate::brokers::SubBrokerTrait;
-use crate::encoder::Decoder;
+use crate::encoders::Decoder;
 use crate::errors::{DecodeError, SubError, UnSubError};
 use crate::options::SubOpt;
 use crate::traits::{AckTrait, SubTrait, UnSubTrait};
@@ -26,7 +26,7 @@ use crate::traits::{AckTrait, SubTrait, UnSubTrait};
 /// use futures::StreamExt;
 /// use serde::Deserialize;
 /// use object_transfer::{
-///   encoder::JSONDecoder,
+///   encoders::JSONDecoder,
 ///   Sub, SubOpt,
 /// };
 /// use object_transfer::brokers::nats::{SubFetcherOpt, SubFetcher};
@@ -78,7 +78,7 @@ use crate::traits::{AckTrait, SubTrait, UnSubTrait};
 /// use bytes::Bytes;
 /// use serde::de::DeserializeOwned;
 /// use object_transfer::{
-///   encoder::Decoder,
+///   encoders::Decoder,
 ///   Sub, SubOpt,
 ///   traits::SubTrait,
 /// };
@@ -225,7 +225,7 @@ mod test {
   use ::serde_json::{from_slice as parse, to_vec as jsonify};
 
   use crate::UnSubNoop;
-  use crate::encoder::MockDecoder;
+  use crate::encoders::MockDecoder;
   use crate::errors::AckError;
   use crate::tests::{
     entity::TestEntity, error::MockDeErr, subscribe::SubscribeMock,
