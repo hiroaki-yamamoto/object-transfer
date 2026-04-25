@@ -1,14 +1,13 @@
 ---
 name: rust-doc
 description: |
-  Write documentation for this rust library. Use when I ask you to write, or
-  update documentation in this rust library like
-  "write documentation for the function `foo`", or
-  "update the documentation for the struct `Bar`".
-  Note that the granularity of the request is not always a single function or
-  struct. For example, I might ask you to "write documentation for the module
-  `baz`", which would require you to write documentation for multiple items
-  in the `baz` module.
+  Write documentation for this rust directory (in directory and subdirectories
+  in `rust`). Use when I ask you to write, or update the documentation like
+  "write documentation for the function `foo`", or "update the documentation
+  for the struct `Bar`". Note that the granularity of the request is not
+  always a single function or struct. For example, I might ask you to "write
+  documentation for the module `baz`", which would require you to write
+  documentation for multiple items in the `baz` module.
 ---
 
 # Documentation Requirements
@@ -16,8 +15,8 @@ The output documentation should follow these requirements:
 
 - Output the generated documentation in English.
 - The documentation should be written in markdown format. However, if
-  the documentation is for a function, struct, or enum, it should be written in
-  Rust doc comment format (i.e., using `///`).
+  the documentation is for a module, function, struct, or enum, it should be written in
+  Rust doc comment format (i.e., using `//!`(module doc) or `///` (item doc)).
 - If you write an example in the documentation, it should be a complete, and
   runnable example that demonstrates how to use the item being documented.
 - **DO NOT use `ignore` in the example code** unless the example is
