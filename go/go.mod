@@ -1,6 +1,6 @@
 module github.com/hiroaki-yamamoto/object-transfer/go
 
-go 1.25.7
+go 1.26.2
 
 require (
 	github.com/nats-io/nats.go v1.49.0

@@ -2,9 +2,6 @@ package subfetcher
 
 import (
 	"github.com/nats-io/nats.go"
-
-	"github.com/hiroaki-yamamoto/object-transfer/go/format"
-	"github.com/hiroaki-yamamoto/object-transfer/go/interfaces"
 )
 
 // AckSubOptions provides configuration options for creating an acknowledgment-based subscriber.
@@ -14,19 +11,16 @@ import (
 type AckSubOptions struct {
 	streamConfig   *nats.StreamConfig
 	consumerConfig *nats.ConsumerConfig
-	autoAck        bool
-	format         format.Format
 }
 
-// NewAckSubOptions creates a new AckSubOptions with the specified format and name.
+// NewAckSubOptions creates a new AckSubOptions with the specified name.
 //
 // Arguments:
-//   - format: The message format to use for serialization/deserialization
 //   - name: The name for both the stream and consumer
 //
 // Returns:
-// A new AckSubOptions instance with default settings and auto-acknowledgment enabled
-func NewAckSubOptions(f format.Format, name string) *AckSubOptions {
+// A new AckSubOptions instance with default settings
+func NewAckSubOptions(name string) *AckSubOptions {
 	return &AckSubOptions{
 		streamConfig: &nats.StreamConfig{
 			Name: name,
@@ -34,21 +28,7 @@ func NewAckSubOptions(f format.Format, name string) *AckSubOptions {
 		consumerConfig: &nats.ConsumerConfig{
 			Durable: name,
 		},
-		autoAck: true,
-		format:  f,
 	}
-}
-
-// AutoAck sets whether messages should be automatically acknowledged.
-//
-// Arguments:
-//   - autoAck: If true, messages will be automatically acknowledged after processing
-//
-// Returns:
-// The AckSubOptions instance for method chaining
-func (o *AckSubOptions) AutoAck(autoAck bool) *AckSubOptions {
-	o.autoAck = autoAck
-	return o
 }
 
 // Name sets the stream name.
@@ -90,18 +70,6 @@ func (o *AckSubOptions) DurableName(durableName string) *AckSubOptions {
 	return o
 }
 
-// Format sets the message format for serialization/deserialization.
-//
-// Arguments:
-//   - format: The format to use for message encoding
-//
-// Returns:
-// The AckSubOptions instance for method chaining
-func (o *AckSubOptions) Format(f format.Format) *AckSubOptions {
-	o.format = f
-	return o
-}
-
 // StreamConfig sets the complete stream configuration.
 //
 // This replaces the entire stream configuration with the provided one.
@@ -129,18 +97,3 @@ func (o *AckSubOptions) ConsumerConfig(consumerConfig *nats.ConsumerConfig) *Ack
 	o.consumerConfig = consumerConfig
 	return o
 }
-
-// GetAutoAck returns whether automatic acknowledgment is enabled.
-// Implements [interfaces.ISubOpt].
-func (o *AckSubOptions) GetAutoAck() bool {
-	return o.autoAck
-}
-
-// GetFormat returns the serialization format used for messages.
-// Implements [interfaces.ISubOpt].
-func (o *AckSubOptions) GetFormat() format.Format {
-	return o.format
-}
-
-// Ensure AckSubOptions implements ISubOpt interface
-var _ interfaces.ISubOpt = (*AckSubOptions)(nil)

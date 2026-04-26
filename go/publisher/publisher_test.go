@@ -10,7 +10,6 @@ import (
 	"github.com/vmihailenco/msgpack/v5"
 
 	"github.com/hiroaki-yamamoto/object-transfer/go/errors"
-	"github.com/hiroaki-yamamoto/object-transfer/go/format"
 	"github.com/hiroaki-yamamoto/object-transfer/go/publisher"
 )
 
@@ -41,18 +40,11 @@ var _ = Describe("Publisher", func() {
 		ctx = context.Background()
 	})
 
-	testPublish := func(fmtType format.Format) {
-		entity := TestEntity{ID: 1, Name: fmt.Sprintf("Test Name: %v", fmtType)}
-		subject := fmt.Sprintf("test.subject.%v", fmtType)
-		var expectedPayload []byte
-		var err error
-
-		switch fmtType {
-		case format.FormatMsgpack:
-			expectedPayload, err = msgpack.Marshal(entity)
-		case format.FormatJSON:
-			expectedPayload, err = json.Marshal(entity)
-		}
+	testPublish := func(name string, marshal func(any) ([]byte, error)) {
+		entity := TestEntity{ID: 1, Name: fmt.Sprintf("Test Name: %v", name)}
+		subject := fmt.Sprintf("test.subject.%v", name)
+		
+		expectedPayload, err := marshal(entity)
 		Expect(err).NotTo(HaveOccurred())
 
 		mockCtx.publishFunc = func(c context.Context, topic string, payload []byte) *errors.PubError {
@@ -61,17 +53,17 @@ var _ = Describe("Publisher", func() {
 			return nil
 		}
 
-		pub := publisher.NewPub[TestEntity](mockCtx, subject, fmtType)
+		pub := publisher.NewPub[TestEntity](mockCtx, subject, marshal)
 		err = pub.Publish(ctx, &entity)
 		Expect(err).NotTo(HaveOccurred())
 	}
 
 	It("should publish with JSON format", func() {
-		testPublish(format.FormatJSON)
+		testPublish("JSON", json.Marshal)
 	})
 
 	It("should publish with MessagePack format", func() {
-		testPublish(format.FormatMsgpack)
+		testPublish("Msgpack", msgpack.Marshal)
 	})
 
 	It("should return error on publish failure", func() {
@@ -83,21 +75,7 @@ var _ = Describe("Publisher", func() {
 			return errors.PubBrokerError(errors.NewBrokerError(testErr))
 		}
 
-		pub := publisher.NewPub[TestEntity](mockCtx, subject, format.FormatJSON)
-		err := pub.Publish(ctx, &entity)
-		Expect(err).To(HaveOccurred())
-		Expect(err).To(BeAssignableToTypeOf(&errors.PubError{}))
-	})
-
-	It("should handle unsupported format", func() {
-		entity := TestEntity{ID: 1, Name: "Test Name"}
-		subject := "test.subject.error"
-
-		mockCtx.publishFunc = func(c context.Context, topic string, payload []byte) *errors.PubError {
-			return nil
-		}
-
-		pub := publisher.NewPub[TestEntity](mockCtx, subject, format.Format("INVALID"))
+		pub := publisher.NewPub[TestEntity](mockCtx, subject, json.Marshal)
 		err := pub.Publish(ctx, &entity)
 		Expect(err).To(HaveOccurred())
 		Expect(err).To(BeAssignableToTypeOf(&errors.PubError{}))
