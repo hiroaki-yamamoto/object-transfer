@@ -2,13 +2,8 @@ package subscriber
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-
-	"github.com/vmihailenco/msgpack/v5"
 
 	goErrors "github.com/hiroaki-yamamoto/object-transfer/go/errors"
-	"github.com/hiroaki-yamamoto/object-transfer/go/format"
 	"github.com/hiroaki-yamamoto/object-transfer/go/interfaces"
 )
 
@@ -28,7 +23,7 @@ import (
 //	  Name string `json:"name" msgpack:"name"`
 //	}
 //
-//	options := nats.NewAckSubOptions(format.FormatJSON, "events")
+//	options := nats.NewAckSubOptions(json.Unmarshal, "events")
 //	options.Subjects("events.user_created")
 //	options.DurableName("user-created")
 //	options.AutoAck(false)
@@ -109,21 +104,12 @@ func (s *Sub[T]) Subscribe(ctx context.Context) (<-chan interfaces.SubMessage[T]
 				continue
 			}
 
-			// Deserialize the message based on format (before auto-ack to avoid
+			// Deserialize the message based on unmarshal func (before auto-ack to avoid
 			// acknowledging messages that cannot be decoded).
 			var decodedItem T
 			var decodeErr *goErrors.SubError
-			switch s.options.GetFormat() {
-			case format.FormatMsgpack:
-				if err := msgpack.Unmarshal(rawMsg.Payload, &decodedItem); err != nil {
-					decodeErr = goErrors.SubMessagePackDecodeError(err)
-				}
-			case format.FormatJSON:
-				if err := json.Unmarshal(rawMsg.Payload, &decodedItem); err != nil {
-					decodeErr = goErrors.SubJsonError(err)
-				}
-			default:
-				decodeErr = goErrors.NewSubError(fmt.Errorf("unsupported format: %v", s.options.GetFormat()))
+			if err := s.options.GetUnmarshalFunc()(rawMsg.Payload, &decodedItem); err != nil {
+				decodeErr = goErrors.SubDecodeError(err)
 			}
 
 			if decodeErr != nil {

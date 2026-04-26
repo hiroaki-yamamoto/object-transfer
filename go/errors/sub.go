@@ -36,12 +36,7 @@ func SubAckError(err *AckError) *SubError {
 	return NewSubError(err)
 }
 
-// SubJsonError creates a new SubError for JSON serialization/deserialization errors.
-func SubJsonError(err error) *SubError {
-	return NewSubError(fmt.Errorf("JSON error: %w", err))
-}
-
-// SubMessagePackDecodeError creates a new SubError for MessagePack decoding errors.
-func SubMessagePackDecodeError(err error) *SubError {
-	return NewSubError(fmt.Errorf("MessagePack decode error: %w", err))
+// SubDecodeError creates a new SubError for decoding errors.
+func SubDecodeError(err error) *SubError {
+	return NewSubError(fmt.Errorf("Decode error: %w", err))
 }

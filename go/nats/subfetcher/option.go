@@ -3,7 +3,6 @@ package subfetcher
 import (
 	"github.com/nats-io/nats.go"
 
-	"github.com/hiroaki-yamamoto/object-transfer/go/format"
 	"github.com/hiroaki-yamamoto/object-transfer/go/interfaces"
 )
 
@@ -15,18 +14,18 @@ type AckSubOptions struct {
 	streamConfig   *nats.StreamConfig
 	consumerConfig *nats.ConsumerConfig
 	autoAck        bool
-	format         format.Format
+	unmarshal      func([]byte, any) error
 }
 
 // NewAckSubOptions creates a new AckSubOptions with the specified format and name.
 //
 // Arguments:
-//   - format: The message format to use for serialization/deserialization
+//   - unmarshal: The function to use for deserialization
 //   - name: The name for both the stream and consumer
 //
 // Returns:
 // A new AckSubOptions instance with default settings and auto-acknowledgment enabled
-func NewAckSubOptions(f format.Format, name string) *AckSubOptions {
+func NewAckSubOptions(unmarshal func([]byte, any) error, name string) *AckSubOptions {
 	return &AckSubOptions{
 		streamConfig: &nats.StreamConfig{
 			Name: name,
@@ -35,7 +34,7 @@ func NewAckSubOptions(f format.Format, name string) *AckSubOptions {
 			Durable: name,
 		},
 		autoAck: true,
-		format:  f,
+		unmarshal: unmarshal,
 	}
 }
 
@@ -90,15 +89,15 @@ func (o *AckSubOptions) DurableName(durableName string) *AckSubOptions {
 	return o
 }
 
-// Format sets the message format for serialization/deserialization.
+// UnmarshalFunc sets the message deserialization function.
 //
 // Arguments:
-//   - format: The format to use for message encoding
+//   - unmarshal: The function to use for message decoding
 //
 // Returns:
 // The AckSubOptions instance for method chaining
-func (o *AckSubOptions) Format(f format.Format) *AckSubOptions {
-	o.format = f
+func (o *AckSubOptions) UnmarshalFunc(unmarshal func([]byte, any) error) *AckSubOptions {
+	o.unmarshal = unmarshal
 	return o
 }
 
@@ -136,10 +135,10 @@ func (o *AckSubOptions) GetAutoAck() bool {
 	return o.autoAck
 }
 
-// GetFormat returns the serialization format used for messages.
+// GetUnmarshalFunc returns the deserialization function used for messages.
 // Implements [interfaces.ISubOpt].
-func (o *AckSubOptions) GetFormat() format.Format {
-	return o.format
+func (o *AckSubOptions) GetUnmarshalFunc() func([]byte, any) error {
+	return o.unmarshal
 }
 
 // Ensure AckSubOptions implements ISubOpt interface

@@ -2,19 +2,14 @@ package publisher
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-
-	"github.com/vmihailenco/msgpack/v5"
 
 	"github.com/hiroaki-yamamoto/object-transfer/go/errors"
-	"github.com/hiroaki-yamamoto/object-transfer/go/format"
 	"github.com/hiroaki-yamamoto/object-transfer/go/interfaces"
 )
 
 // Pub is a generic publisher for serializable messages using a pluggable context.
 //
-// The publisher encodes messages according to the configured Format and
+// The publisher encodes messages according to the configured marshal function and
 // delegates the actual publish call to an injected IPubCtx so it can
 // work with different backends.
 //
@@ -29,14 +24,14 @@ import (
 //	  Name string `json:"name" msgpack:"name"`
 //	}
 //
-//	publisher := publisher.NewPub[UserCreated](js, "events.user_created", format.FormatJSON)
+//	publisher := publisher.NewPub[UserCreated](js, "events.user_created", json.Marshal)
 //
 //	event := UserCreated{ID: 42, Name: "Jane Doe"}
 //	publisher.Publish(ctx, &event)
 type Pub[T any] struct {
 	ctx     interfaces.IPubCtx
 	subject string
-	format  format.Format
+	marshal func(v any) ([]byte, error)
 }
 
 // NewPub creates a new publisher for the given subject and serialization format.
@@ -44,16 +39,16 @@ type Pub[T any] struct {
 // # Parameters
 //   - ctx: Backend publish context that delivers serialized bytes.
 //   - subject: Destination subject or topic to send messages to.
-//   - format: Serialization format used when encoding published items.
+//   - marshal: Function used to serialize published items into bytes.
 func NewPub[T any](
 	ctx interfaces.IPubCtx,
 	subject string,
-	fmtType format.Format,
+	marshal func(v any) ([]byte, error),
 ) *Pub[T] {
 	return &Pub[T]{
 		ctx:     ctx,
 		subject: subject,
-		format:  fmtType,
+		marshal: marshal,
 	}
 }
 
@@ -64,22 +59,9 @@ func NewPub[T any](
 //   - ctx: context for cancellation and timeouts
 //   - obj: The typed value to encode and send to the subject
 func (p *Pub[T]) Publish(ctx context.Context, obj interface{}) *errors.PubError {
-	var payload []byte
-	var err error
-
-	switch p.format {
-	case format.FormatMsgpack:
-		payload, err = msgpack.Marshal(obj)
-		if err != nil {
-			return errors.PubMessagePackEncodeError(err)
-		}
-	case format.FormatJSON:
-		payload, err = json.Marshal(obj)
-		if err != nil {
-			return errors.PubJsonError(err)
-		}
-	default:
-		return errors.NewPubError(fmt.Errorf("unsupported format: %v", p.format))
+	payload, err := p.marshal(obj)
+	if err != nil {
+		return errors.PubEncodeError(err)
 	}
 
 	pubErr := p.ctx.Publish(ctx, p.subject, payload)

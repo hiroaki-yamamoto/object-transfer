@@ -38,9 +38,9 @@ import (
 
 	nats "github.com/nats-io/nats.go"
 
-	"github.com/hiroaki-yamamoto/object-transfer/go/format"
 	"github.com/hiroaki-yamamoto/object-transfer/go/nats"
 	"github.com/hiroaki-yamamoto/object-transfer/go/publisher"
+	"encoding/json"
 )
 
 type UserCreated struct {
@@ -66,7 +66,7 @@ func main() {
 
 	// Create a publisher for the user.created topic
 	pubCtx := nats.NewPubCtx(js)
-	pub := publisher.NewPub[UserCreated](pubCtx, "user.created", format.FormatJSON)
+	pub := publisher.NewPub[UserCreated](pubCtx, "user.created", json.Marshal)
 
 	// Publish an event
 	event := UserCreated{ID: 42, Name: "Jane Doe"}
@@ -88,9 +88,9 @@ import (
 
 	nats "github.com/nats-io/nats.go"
 
-	"github.com/hiroaki-yamamoto/object-transfer/go/format"
 	otNats "github.com/hiroaki-yamamoto/object-transfer/go/nats"
 	"github.com/hiroaki-yamamoto/object-transfer/go/subscriber"
+	"encoding/json"
 )
 
 type UserCreated struct {
@@ -115,7 +115,7 @@ func main() {
 	}
 
 	// Create subscription options
-	options := otNats.NewAckSubOptions(format.FormatJSON, "user-events")
+	options := otNats.NewAckSubOptions(json.Unmarshal, "user-events")
 	options.Subjects("user.created")
 	options.DurableName("user-created-consumer")
 	options.AutoAck(false) // Manual acknowledgment
@@ -164,10 +164,10 @@ import (
 
 	goredis "github.com/redis/go-redis/v9"
 
-	"github.com/hiroaki-yamamoto/object-transfer/go/format"
 	"github.com/hiroaki-yamamoto/object-transfer/go/publisher"
 	redisPublisher "github.com/hiroaki-yamamoto/object-transfer/go/redis/publisher"
 	redisConfig "github.com/hiroaki-yamamoto/object-transfer/go/redis/config"
+	"encoding/json"
 )
 
 type UserCreated struct {
@@ -194,7 +194,7 @@ func main() {
 	rpub := redisPublisher.New(client, cfg)
 
 	// Create a publisher for the user.created stream
-	pub := publisher.NewPub[UserCreated](rpub, "user.created", format.FormatJSON)
+	pub := publisher.NewPub[UserCreated](rpub, "user.created", json.Marshal)
 
 	// Publish an event
 	event := UserCreated{ID: 42, Name: "Jane Doe"}
@@ -216,10 +216,10 @@ import (
 
 	goredis "github.com/redis/go-redis/v9"
 
-	"github.com/hiroaki-yamamoto/object-transfer/go/format"
 	redisSubscriber "github.com/hiroaki-yamamoto/object-transfer/go/redis/subscriber"
 	redisConfig "github.com/hiroaki-yamamoto/object-transfer/go/redis/config"
 	"github.com/hiroaki-yamamoto/object-transfer/go/subscriber"
+	"encoding/json"
 )
 
 type UserCreated struct {
@@ -243,7 +243,7 @@ func main() {
 	}
 
 	// Create Redis subscriber
-	rsub := redisSubscriber.New(client, "user.created", format.FormatJSON, cfg)
+	rsub := redisSubscriber.New(client, cfg)
 
 	// Create subscriber
 	sub := subscriber.NewSub[UserCreated](rsub, rsub, rsub)
@@ -277,13 +277,13 @@ The library supports two serialization formats:
 ### JSON
 
 ```go
-pub := publisher.NewPub[MyType](ctx, "topic", format.FormatJSON)
+pub := publisher.NewPub[MyType](ctx, "topic", json.Marshal)
 ```
 
 ### MessagePack
 
 ```go
-pub := publisher.NewPub[MyType](ctx, "topic", format.FormatMsgpack)
+pub := publisher.NewPub[MyType](ctx, "topic", msgpack.Marshal)
 ```
 
 ## Error Handling
@@ -308,14 +308,14 @@ if err != nil {
 ### Automatic Acknowledgment (NATS)
 
 ```go
-options := nats.NewAckSubOptions(format.FormatJSON, "events")
+options := nats.NewAckSubOptions(json.Unmarshal, "events")
 options.AutoAck(true) // Messages are acked automatically
 ```
 
 ### Manual Acknowledgment
 
 ```go
-options := nats.NewAckSubOptions(format.FormatJSON, "events")
+options := nats.NewAckSubOptions(json.Unmarshal, "events")
 options.AutoAck(false) // You control when to ack
 
 for msg := range messages {

@@ -31,12 +31,7 @@ func PubBrokerError(err *BrokerError) *PubError {
 	return NewPubError(err)
 }
 
-// PubJsonError creates a new PubError for JSON serialization/deserialization errors.
-func PubJsonError(err error) *PubError {
-	return NewPubError(fmt.Errorf("JSON error: %w", err))
-}
-
-// PubMessagePackEncodeError creates a new PubError for MessagePack encoding errors.
-func PubMessagePackEncodeError(err error) *PubError {
-	return NewPubError(fmt.Errorf("MessagePack encode error: %w", err))
+// PubEncodeError creates a new PubError for encoding errors.
+func PubEncodeError(err error) *PubError {
+	return NewPubError(fmt.Errorf("Encode error: %w", err))
 }

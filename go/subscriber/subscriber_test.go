@@ -10,7 +10,6 @@ import (
 	"github.com/vmihailenco/msgpack/v5"
 
 	"github.com/hiroaki-yamamoto/object-transfer/go/errors"
-	"github.com/hiroaki-yamamoto/object-transfer/go/format"
 	"github.com/hiroaki-yamamoto/object-transfer/go/interfaces"
 	"github.com/hiroaki-yamamoto/object-transfer/go/subscriber"
 )
@@ -58,16 +57,16 @@ func (m *MockSubCtx) Subscribe(ctx context.Context) (<-chan interfaces.SubCtxMes
 
 // MockSubOpt is a mock implementation of ISubOpt
 type MockSubOpt struct {
-	autoAck bool
-	fmtType format.Format
+	autoAck   bool
+	unmarshal func([]byte, any) error
 }
 
 func (m *MockSubOpt) GetAutoAck() bool {
 	return m.autoAck
 }
 
-func (m *MockSubOpt) GetFormat() format.Format {
-	return m.fmtType
+func (m *MockSubOpt) GetUnmarshalFunc() func([]byte, any) error {
+	return m.unmarshal
 }
 
 // MockUnSub is a mock implementation of IUnSub
@@ -89,7 +88,7 @@ var _ = Describe("Subscriber", func() {
 		ctx = context.Background()
 	})
 
-	testSubscribe := func(fmtType format.Format, autoAck bool) {
+	testSubscribe := func(marshal func(any) ([]byte, error), unmarshal func([]byte, any) error, autoAck bool) {
 		entities := []TestEntity{
 			{ID: 1, Name: "Test1"},
 			{ID: 2, Name: "Test2"},
@@ -98,15 +97,7 @@ var _ = Describe("Subscriber", func() {
 
 		var messages []interfaces.SubCtxMessage
 		for _, entity := range entities {
-			var payload []byte
-			var err error
-
-			switch fmtType {
-			case format.FormatMsgpack:
-				payload, err = msgpack.Marshal(entity)
-			case format.FormatJSON:
-				payload, err = json.Marshal(entity)
-			}
+			payload, err := marshal(entity)
 			Expect(err).NotTo(HaveOccurred())
 
 			ack := &MockAck{}
@@ -117,7 +108,7 @@ var _ = Describe("Subscriber", func() {
 		}
 
 		mockCtx := &MockSubCtx{messages: messages}
-		mockOpt := &MockSubOpt{autoAck: autoAck, fmtType: fmtType}
+		mockOpt := &MockSubOpt{autoAck: autoAck, unmarshal: unmarshal}
 		mockUnSub := &MockUnSub{}
 
 		sub := subscriber.NewSub[TestEntity](mockCtx, mockUnSub, mockOpt)
@@ -149,19 +140,19 @@ var _ = Describe("Subscriber", func() {
 	}
 
 	It("should subscribe and deserialize with JSON format and auto-ack enabled", func() {
-		testSubscribe(format.FormatJSON, true)
+		testSubscribe(json.Marshal, json.Unmarshal, true)
 	})
 
 	It("should subscribe and deserialize with MessagePack format and auto-ack enabled", func() {
-		testSubscribe(format.FormatMsgpack, true)
+		testSubscribe(msgpack.Marshal, msgpack.Unmarshal, true)
 	})
 
 	It("should subscribe and deserialize with JSON format and auto-ack disabled", func() {
-		testSubscribe(format.FormatJSON, false)
+		testSubscribe(json.Marshal, json.Unmarshal, false)
 	})
 
 	It("should subscribe and deserialize with MessagePack format and auto-ack disabled", func() {
-		testSubscribe(format.FormatMsgpack, false)
+		testSubscribe(msgpack.Marshal, msgpack.Unmarshal, false)
 	})
 
 	It("should handle ack errors during auto-ack", func() {
@@ -181,7 +172,7 @@ var _ = Describe("Subscriber", func() {
 		}
 
 		mockCtx := &MockSubCtx{messages: messages}
-		mockOpt := &MockSubOpt{autoAck: true, fmtType: format.FormatJSON}
+		mockOpt := &MockSubOpt{autoAck: true, unmarshal: json.Unmarshal}
 		mockUnSub := &MockUnSub{}
 
 		sub := subscriber.NewSub[TestEntity](mockCtx, mockUnSub, mockOpt)
@@ -208,7 +199,7 @@ var _ = Describe("Subscriber", func() {
 		}
 
 		mockCtx := &MockSubCtx{messages: messages}
-		mockOpt := &MockSubOpt{autoAck: false, fmtType: format.FormatJSON}
+		mockOpt := &MockSubOpt{autoAck: false, unmarshal: json.Unmarshal}
 		mockUnSub := &MockUnSub{}
 
 		sub := subscriber.NewSub[TestEntity](mockCtx, mockUnSub, mockOpt)
@@ -234,7 +225,7 @@ var _ = Describe("Subscriber", func() {
 		}
 
 		mockCtx := &MockSubCtx{messages: messages}
-		mockOpt := &MockSubOpt{autoAck: false, fmtType: format.FormatMsgpack}
+		mockOpt := &MockSubOpt{autoAck: false, unmarshal: msgpack.Unmarshal}
 		mockUnSub := &MockUnSub{}
 
 		sub := subscriber.NewSub[TestEntity](mockCtx, mockUnSub, mockOpt)

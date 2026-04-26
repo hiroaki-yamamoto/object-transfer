@@ -2,14 +2,15 @@ package redis_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/redis/go-redis/v9"
+	"github.com/vmihailenco/msgpack/v5"
 
-	"github.com/hiroaki-yamamoto/object-transfer/go/format"
 	pubpkg "github.com/hiroaki-yamamoto/object-transfer/go/publisher"
 	redisconfig "github.com/hiroaki-yamamoto/object-transfer/go/redis/config"
 	"github.com/hiroaki-yamamoto/object-transfer/go/redis/publisher"
@@ -24,26 +25,26 @@ type MyObj struct {
 
 // TestSubOptions implements the ISubOpt interface for testing
 type TestSubOptions struct {
-	format  format.Format
-	autoAck bool
+	unmarshal func([]byte, any) error
+	autoAck   bool
 }
 
 func (tso *TestSubOptions) GetAutoAck() bool {
 	return tso.autoAck
 }
 
-func (tso *TestSubOptions) GetFormat() format.Format {
-	return tso.format
+func (tso *TestSubOptions) GetUnmarshalFunc() func([]byte, any) error {
+	return tso.unmarshal
 }
 
-// uniqueStreamName generates a unique stream name based on the format and current timestamp
-func uniqueStreamName(fmtType format.Format) string {
+// uniqueStreamName generates a unique stream name based on the name and current timestamp
+func uniqueStreamName(name string) string {
 	now := time.Now().UnixMilli()
-	return fmt.Sprintf("object_transfer_redis_%s_%d", fmtType, now)
+	return fmt.Sprintf("object_transfer_redis_%s_%d", name, now)
 }
 
 // setup creates a publisher and subscriber for testing
-func setup(ctx context.Context, fmtType format.Format) (*pubpkg.Pub[MyObj], *subpkg.Sub[MyObj], error) {
+func setup(ctx context.Context, name string, marshal func(any) ([]byte, error), unmarshal func([]byte, any) error) (*pubpkg.Pub[MyObj], *subpkg.Sub[MyObj], error) {
 	// Connect to Redis
 	client := redis.NewClient(&redis.Options{
 		Addr: "127.0.0.1:6379",
@@ -54,7 +55,7 @@ func setup(ctx context.Context, fmtType format.Format) (*pubpkg.Pub[MyObj], *sub
 		return nil, nil, fmt.Errorf("failed to connect to Redis: %w", err)
 	}
 
-	streamName := uniqueStreamName(fmtType)
+	streamName := uniqueStreamName(name)
 	publisherGroup := fmt.Sprintf("%s_publisher", streamName)
 	subscriberGroup := fmt.Sprintf("%s_subscriber", streamName)
 	subscriberConsumer := fmt.Sprintf("%s_consumer", streamName)
@@ -77,19 +78,19 @@ func setup(ctx context.Context, fmtType format.Format) (*pubpkg.Pub[MyObj], *sub
 
 	// Create typed publisher and subscriber
 	options := &TestSubOptions{
-		format:  fmtType,
-		autoAck: true,
+		unmarshal: unmarshal,
+		autoAck:   true,
 	}
 
-	pub := pubpkg.NewPub[MyObj](publ, streamName, fmtType)
+	pub := pubpkg.NewPub[MyObj](publ, streamName, marshal)
 	sub := subpkg.NewSub[MyObj](subsc, subsc, options)
 
 	return pub, sub, nil
 }
 
 // roundtrip tests the publish/subscribe roundtrip
-func roundtrip(ctx context.Context, fmtType format.Format) {
-	pub, sub, err := setup(ctx, fmtType)
+func roundtrip(ctx context.Context, name string, marshal func(any) ([]byte, error), unmarshal func([]byte, any) error) {
+	pub, sub, err := setup(ctx, name, marshal, unmarshal)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(pub).NotTo(BeNil())
 	Expect(sub).NotTo(BeNil())
@@ -151,10 +152,10 @@ var _ = Describe("Redis", func() {
 	})
 
 	It("should roundtrip with MessagePack format", func() {
-		roundtrip(ctx, format.FormatMsgpack)
+		roundtrip(ctx, "msgpack", msgpack.Marshal, msgpack.Unmarshal)
 	})
 
 	It("should roundtrip with JSON format", func() {
-		roundtrip(ctx, format.FormatJSON)
+		roundtrip(ctx, "json", json.Marshal, json.Unmarshal)
 	})
 })

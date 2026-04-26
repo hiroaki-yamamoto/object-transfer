@@ -2,14 +2,15 @@ package nats_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
 	natssdk "github.com/nats-io/nats.go"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/vmihailenco/msgpack/v5"
 
-	"github.com/hiroaki-yamamoto/object-transfer/go/format"
 	"github.com/hiroaki-yamamoto/object-transfer/go/nats"
 	"github.com/hiroaki-yamamoto/object-transfer/go/nats/subfetcher"
 	"github.com/hiroaki-yamamoto/object-transfer/go/publisher"
@@ -21,10 +22,17 @@ type MyObj struct {
 	Field string `json:"field" msgpack:"field"`
 }
 
+func uniqueStreamName(name string) string {
+	now := time.Now().UnixNano()
+	return fmt.Sprintf("object_transfer_nats_%s_%d", name, now)
+}
+
 // setup initializes a NATS connection, JetStream context, publisher, and subscriber
 func setup(
 	ctx context.Context,
-	fmtType format.Format,
+	name string,
+	marshal func(any) ([]byte, error),
+	unmarshal func([]byte, any) error,
 ) (*publisher.Pub[MyObj], *subscriber.Sub[MyObj], error) {
 	// Connect to NATS
 	client, err := natssdk.Connect(
@@ -42,17 +50,16 @@ func setup(
 		return nil, nil, err
 	}
 
-	// Create a unique name based on the format
-	name := fmt.Sprintf("object_transfer_%s", fmtType)
+	uniqueName := uniqueStreamName(name)
 
 	// Create publisher
 	pubCtx := nats.NewPubCtx(js)
-	pub := publisher.NewPub[MyObj](pubCtx, name, fmtType)
+	pub := publisher.NewPub[MyObj](pubCtx, uniqueName, marshal)
 
 	// Create subscriber options
-	opts := subfetcher.NewAckSubOptions(fmtType, name).
-		Subjects(name).
-		DurableName(name)
+	opts := subfetcher.NewAckSubOptions(unmarshal, uniqueName).
+		Subjects(uniqueName).
+		DurableName(uniqueName)
 
 	// Create SubFetcher
 	fetcher, err := subfetcher.NewSubFetcher(ctx, js, opts)
@@ -67,12 +74,12 @@ func setup(
 }
 
 var _ = Describe("Nats", func() {
-	testRoundtrip := func(fmtType format.Format) func() {
+	testRoundtrip := func(name string, marshal func(any) ([]byte, error), unmarshal func([]byte, any) error) func() {
 		return func() {
 			ctx := context.Background()
 			ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 			defer cancel()
-			pub, sub, err := setup(ctx, fmtType)
+			pub, sub, err := setup(ctx, name, marshal, unmarshal)
 			Expect(err).NotTo(HaveOccurred())
 
 			obj := MyObj{Field: "value"}
@@ -127,10 +134,10 @@ var _ = Describe("Nats", func() {
 	}
 
 	Describe("MessagePack format", func() {
-		It("should publish and subscribe to a message", testRoundtrip(format.FormatMsgpack))
+		It("should publish and subscribe to a message", testRoundtrip("object_transfer_msgpack", msgpack.Marshal, msgpack.Unmarshal))
 	})
 
 	Describe("JSON format", func() {
-		It("should publish and subscribe to a message", testRoundtrip(format.FormatJSON))
+		It("should publish and subscribe to a message", testRoundtrip("object_transfer_json", json.Marshal, json.Unmarshal))
 	})
 })
