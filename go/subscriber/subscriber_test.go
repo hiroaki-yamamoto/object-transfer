@@ -55,19 +55,6 @@ func (m *MockSubCtx) Subscribe(ctx context.Context) (<-chan interfaces.SubCtxMes
 	return ch, nil
 }
 
-// MockSubOpt is a mock implementation of ISubOpt
-type MockSubOpt struct {
-	autoAck   bool
-	unmarshal func([]byte, any) error
-}
-
-func (m *MockSubOpt) GetAutoAck() bool {
-	return m.autoAck
-}
-
-func (m *MockSubOpt) GetUnmarshalFunc() func([]byte, any) error {
-	return m.unmarshal
-}
 
 // MockUnSub is a mock implementation of IUnSub
 type MockUnSub struct {
@@ -108,10 +95,11 @@ var _ = Describe("Subscriber", func() {
 		}
 
 		mockCtx := &MockSubCtx{messages: messages}
-		mockOpt := &MockSubOpt{autoAck: autoAck, unmarshal: unmarshal}
+		opt := subscriber.NewOption().AutoAck(autoAck)
 		mockUnSub := &MockUnSub{}
 
-		sub := subscriber.NewSub[TestEntity](mockCtx, mockUnSub, mockOpt)
+		sub, err := subscriber.NewSub[TestEntity](mockCtx, unmarshal, mockUnSub, opt)
+		Expect(err).NotTo(HaveOccurred())
 		subMessages, err := sub.Subscribe(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -172,10 +160,11 @@ var _ = Describe("Subscriber", func() {
 		}
 
 		mockCtx := &MockSubCtx{messages: messages}
-		mockOpt := &MockSubOpt{autoAck: true, unmarshal: json.Unmarshal}
+		opt := subscriber.NewOption().AutoAck(true)
 		mockUnSub := &MockUnSub{}
 
-		sub := subscriber.NewSub[TestEntity](mockCtx, mockUnSub, mockOpt)
+		sub, err := subscriber.NewSub[TestEntity](mockCtx, json.Unmarshal, mockUnSub, opt)
+		Expect(err).NotTo(HaveOccurred())
 		subMessages, err := sub.Subscribe(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -199,10 +188,11 @@ var _ = Describe("Subscriber", func() {
 		}
 
 		mockCtx := &MockSubCtx{messages: messages}
-		mockOpt := &MockSubOpt{autoAck: false, unmarshal: json.Unmarshal}
+		opt := subscriber.NewOption().AutoAck(false)
 		mockUnSub := &MockUnSub{}
 
-		sub := subscriber.NewSub[TestEntity](mockCtx, mockUnSub, mockOpt)
+		sub, err := subscriber.NewSub[TestEntity](mockCtx, json.Unmarshal, mockUnSub, opt)
+		Expect(err).NotTo(HaveOccurred())
 		subMessages, err := sub.Subscribe(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -225,10 +215,11 @@ var _ = Describe("Subscriber", func() {
 		}
 
 		mockCtx := &MockSubCtx{messages: messages}
-		mockOpt := &MockSubOpt{autoAck: false, unmarshal: msgpack.Unmarshal}
+		opt := subscriber.NewOption().AutoAck(false)
 		mockUnSub := &MockUnSub{}
 
-		sub := subscriber.NewSub[TestEntity](mockCtx, mockUnSub, mockOpt)
+		sub, err := subscriber.NewSub[TestEntity](mockCtx, msgpack.Unmarshal, mockUnSub, opt)
+		Expect(err).NotTo(HaveOccurred())
 		subMessages, err := sub.Subscribe(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -252,31 +243,33 @@ var _ = Describe("Subscriber", func() {
 		}
 
 		mockCtx := &MockSubCtx{}
-		mockOpt := &MockSubOpt{}
+		opt := subscriber.NewOption()
 
-		sub := subscriber.NewSub[TestEntity](mockCtx, mockUnSub, mockOpt)
-		err := sub.Unsubscribe(ctx)
-
+		sub, err := subscriber.NewSub[TestEntity](mockCtx, json.Unmarshal, mockUnSub, opt)
 		Expect(err).NotTo(HaveOccurred())
+		unsubErr := sub.Unsubscribe(ctx)
+
+		Expect(unsubErr).NotTo(HaveOccurred())
 		Expect(unsubCalled).To(BeTrue())
 	})
 
 	It("should propagate unsubscribe errors", func() {
-		unsubErr := fmt.Errorf("unsubscribe failed")
+		expectedErr := fmt.Errorf("unsubscribe failed")
 		mockUnSub := &MockUnSub{
 			unsubFunc: func(ctx context.Context) *errors.UnSubError {
-				return errors.NewUnSubError(unsubErr)
+				return errors.NewUnSubError(expectedErr)
 			},
 		}
 
 		mockCtx := &MockSubCtx{}
-		mockOpt := &MockSubOpt{}
+		opt := subscriber.NewOption()
 
-		sub := subscriber.NewSub[TestEntity](mockCtx, mockUnSub, mockOpt)
-		err := sub.Unsubscribe(ctx)
+		sub, err := subscriber.NewSub[TestEntity](mockCtx, json.Unmarshal, mockUnSub, opt)
+		Expect(err).NotTo(HaveOccurred())
+		unsubErr := sub.Unsubscribe(ctx)
 
-		Expect(err).To(HaveOccurred())
-		Expect(err).To(BeAssignableToTypeOf(&errors.UnSubError{}))
-		Expect(err).NotTo(Equal(unsubErr))
+		Expect(unsubErr).To(HaveOccurred())
+		Expect(unsubErr).To(BeAssignableToTypeOf(&errors.UnSubError{}))
+		Expect(unsubErr).NotTo(Equal(expectedErr))
 	})
 })

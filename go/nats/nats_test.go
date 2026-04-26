@@ -57,7 +57,7 @@ func setup(
 	pub := publisher.NewPub[MyObj](pubCtx, uniqueName, marshal)
 
 	// Create subscriber options
-	opts := subfetcher.NewAckSubOptions(unmarshal, uniqueName).
+	opts := subfetcher.NewAckSubOptions(uniqueName).
 		Subjects(uniqueName).
 		DurableName(uniqueName)
 
@@ -68,7 +68,11 @@ func setup(
 	}
 
 	// Create subscriber
-	sub := subscriber.NewSub[MyObj](fetcher, fetcher, opts)
+	subOpts := subscriber.NewOption().AutoAck(false)
+	sub, subErr := subscriber.NewSub[MyObj](fetcher, unmarshal, fetcher, subOpts)
+	if subErr != nil {
+		return nil, nil, subErr
+	}
 
 	return pub, sub, nil
 }

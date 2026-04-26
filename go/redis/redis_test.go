@@ -23,20 +23,6 @@ type MyObj struct {
 	Field string `json:"field" msgpack:"field"`
 }
 
-// TestSubOptions implements the ISubOpt interface for testing
-type TestSubOptions struct {
-	unmarshal func([]byte, any) error
-	autoAck   bool
-}
-
-func (tso *TestSubOptions) GetAutoAck() bool {
-	return tso.autoAck
-}
-
-func (tso *TestSubOptions) GetUnmarshalFunc() func([]byte, any) error {
-	return tso.unmarshal
-}
-
 // uniqueStreamName generates a unique stream name based on the name and current timestamp
 func uniqueStreamName(name string) string {
 	now := time.Now().UnixMilli()
@@ -77,13 +63,13 @@ func setup(ctx context.Context, name string, marshal func(any) ([]byte, error), 
 	subsc := subscriber.New(client, subscriberCfg)
 
 	// Create typed publisher and subscriber
-	options := &TestSubOptions{
-		unmarshal: unmarshal,
-		autoAck:   true,
-	}
+	options := subpkg.NewOption().AutoAck(true)
 
 	pub := pubpkg.NewPub[MyObj](publ, streamName, marshal)
-	sub := subpkg.NewSub[MyObj](subsc, subsc, options)
+	sub, subErr := subpkg.NewSub[MyObj](subsc, unmarshal, subsc, options)
+	if subErr != nil {
+		return nil, nil, fmt.Errorf("failed to create subscriber: %w", subErr)
+	}
 
 	return pub, sub, nil
 }

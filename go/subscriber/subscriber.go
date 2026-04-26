@@ -2,6 +2,7 @@ package subscriber
 
 import (
 	"context"
+	"errors"
 
 	goErrors "github.com/hiroaki-yamamoto/object-transfer/go/errors"
 	"github.com/hiroaki-yamamoto/object-transfer/go/interfaces"
@@ -9,8 +10,8 @@ import (
 
 // Sub is a generic subscriber that deserializes messages and optionally acknowledges them.
 //
-// The subscriber relies on an ISubCtxTrait implementation for message retrieval and an
-// ISubOpt provider for decoding and acknowledgment behavior.
+// The subscriber relies on an ISubCtxTrait implementation for message retrieval, an
+// unmarshal function for decoding, and an Option for acknowledgment behavior.
 //
 // # Example
 //
@@ -23,13 +24,13 @@ import (
 //	  Name string `json:"name" msgpack:"name"`
 //	}
 //
-//	options := nats.NewAckSubOptions(json.Unmarshal, "events")
-//	options.Subjects("events.user_created")
-//	options.DurableName("user-created")
-//	options.AutoAck(false)
+//	natsOpts := nats.NewAckSubOptions("events")
+//	natsOpts.Subjects("events.user_created")
+//	natsOpts.DurableName("user-created")
 //
-//	fetcher, _ := nats.NewSubFetcher(js, options)
-//	subscriber := NewSub[Event](fetcher, fetcher, options)
+//	fetcher, _ := nats.NewSubFetcher(js, natsOpts)
+//	subOpts := NewOption().AutoAck(false)
+//	subscriber, _ := NewSub[Event](fetcher, json.Unmarshal, fetcher, subOpts)
 //	messages, _ := subscriber.Subscribe(ctx)
 //
 //	for msg := range messages {
@@ -43,9 +44,10 @@ import (
 //	  }
 //	}
 type Sub[T any] struct {
-	ctx     interfaces.ISubCtxTrait
-	unsub   interfaces.IUnSub
-	options interfaces.ISubOpt
+	ctx         interfaces.ISubCtxTrait
+	unmarshalFn func([]byte, any) error
+	unsub       interfaces.IUnSub
+	options     *Option
 }
 
 // NewSub creates a new subscriber using the provided context, unsubscribe handler, and
@@ -57,14 +59,28 @@ type Sub[T any] struct {
 //   - options: Subscription behavior such as auto-ack and payload format.
 func NewSub[T any](
 	ctx interfaces.ISubCtxTrait,
+	unmarshalFn func([]byte, any) error,
 	unsub interfaces.IUnSub,
-	options interfaces.ISubOpt,
-) *Sub[T] {
-	return &Sub[T]{
-		ctx:     ctx,
-		unsub:   unsub,
-		options: options,
+	options *Option,
+) (*Sub[T], *goErrors.SubError) {
+	if ctx == nil {
+		return nil, goErrors.NewSubError(errors.New("context is nil"))
 	}
+	if unmarshalFn == nil {
+		return nil, goErrors.NewSubError(errors.New("unmarshalFn is nil"))
+	}
+	if unsub == nil {
+		return nil, goErrors.NewSubError(errors.New("unsub is nil"))
+	}
+	if options == nil {
+		options = NewOption()
+	}
+	return &Sub[T]{
+		ctx:         ctx,
+		unmarshalFn: unmarshalFn,
+		unsub:       unsub,
+		options:     options,
+	}, nil
 }
 
 // Subscribe returns a channel of SubMessage containing decoded items and their acknowledgment handlers.
@@ -108,7 +124,7 @@ func (s *Sub[T]) Subscribe(ctx context.Context) (<-chan interfaces.SubMessage[T]
 			// acknowledging messages that cannot be decoded).
 			var decodedItem T
 			var decodeErr *goErrors.SubError
-			if err := s.options.GetUnmarshalFunc()(rawMsg.Payload, &decodedItem); err != nil {
+			if err := s.unmarshalFn(rawMsg.Payload, &decodedItem); err != nil {
 				decodeErr = goErrors.SubDecodeError(err)
 			}
 
@@ -126,7 +142,7 @@ func (s *Sub[T]) Subscribe(ctx context.Context) (<-chan interfaces.SubMessage[T]
 			}
 
 			// Auto-ack after successful decode
-			if s.options.GetAutoAck() && rawMsg.Ack != nil {
+			if s.options.autoAck && rawMsg.Ack != nil {
 				if err := rawMsg.Ack.Ack(ctx); err != nil {
 					select {
 					case messages <- interfaces.SubMessage[T]{
