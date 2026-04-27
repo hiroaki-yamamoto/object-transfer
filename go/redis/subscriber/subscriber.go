@@ -43,7 +43,7 @@ func New(client redis.Cmdable, cfg *config.SubscriberConfig) *Subscriber {
 // handleStreamIDs processes stream IDs and extracts payloads with their acknowledgment handlers.
 //
 // Malformed entries (missing "data" field or unexpected type) are returned as
-// SubCtxMessage{Err: ..., Ack: ...} so callers can decide whether to acknowledge
+// SubBrokerMsg{Err: ..., Ack: ...} so callers can decide whether to acknowledge
 // or drop them, preventing messages from accumulating in the pending-entry list.
 //
 // # Arguments
@@ -53,12 +53,12 @@ func New(client redis.Cmdable, cfg *config.SubscriberConfig) *Subscriber {
 //
 // # Returns
 //
-// A slice of SubCtxMessage containing payloads or errors with their acknowledgment handlers.
+// A slice of SubBrokerMsg containing payloads or errors with their acknowledgment handlers.
 func (s *Subscriber) handleStreamIDs(
 	_ context.Context,
 	streamIDs []redis.XMessage,
-) []interfaces.SubCtxMessage {
-	var results []interfaces.SubCtxMessage
+) []interfaces.SubBrokerMsg {
+	var results []interfaces.SubBrokerMsg
 	for _, msg := range streamIDs {
 		// Always create the ack handler first so malformed entries can also be
 		// returned with an Ack, letting callers decide whether to acknowledge or
@@ -73,7 +73,7 @@ func (s *Subscriber) handleStreamIDs(
 		// Extract the "data" field from the message
 		data, ok := msg.Values["data"]
 		if !ok {
-			results = append(results, interfaces.SubCtxMessage{
+			results = append(results, interfaces.SubBrokerMsg{
 				Err: errors.SubBrokerError(
 					errors.NewBrokerError(
 						rediserrors.NewSubscribeMissingDataFieldError(msg.ID),
@@ -92,7 +92,7 @@ func (s *Subscriber) handleStreamIDs(
 		case []byte:
 			payload = v
 		default:
-			results = append(results, interfaces.SubCtxMessage{
+			results = append(results, interfaces.SubBrokerMsg{
 				Err: errors.SubBrokerError(
 					errors.NewBrokerError(
 						rediserrors.NewSubscribeInvalidDataTypeError(msg.ID, data),
@@ -103,7 +103,7 @@ func (s *Subscriber) handleStreamIDs(
 			continue
 		}
 
-		results = append(results, interfaces.SubCtxMessage{
+		results = append(results, interfaces.SubBrokerMsg{
 			Payload: payload,
 			Ack:     ack,
 		})
@@ -163,10 +163,10 @@ func (s *Subscriber) autoclaim(
 //
 // # Returns
 //
-// A channel that yields SubCtxMessage containing payload and ack handler, or an error if subscription fails.
+// A channel that yields SubBrokerMsg containing payload and ack handler, or an error if subscription fails.
 func (s *Subscriber) Subscribe(
 	ctx context.Context,
-) (<-chan interfaces.SubCtxMessage, *errors.SubError) {
+) (<-chan interfaces.SubBrokerMsg, *errors.SubError) {
 	// Create the consumer group if it doesn't exist
 	err := bredis.MakeStreamGroup(ctx, s.client, s.cfg.TopicName, s.cfg.GroupName)
 	if err != nil {
@@ -177,7 +177,7 @@ func (s *Subscriber) Subscribe(
 		)
 	}
 
-	ch := make(chan interfaces.SubCtxMessage)
+	ch := make(chan interfaces.SubBrokerMsg)
 
 	go func() {
 		defer close(ch)
@@ -253,7 +253,7 @@ func (s *Subscriber) Subscribe(
 
 			if acResult.err != nil {
 				select {
-				case ch <- interfaces.SubCtxMessage{Err: acResult.err}:
+				case ch <- interfaces.SubBrokerMsg{Err: acResult.err}:
 				case <-ctx.Done():
 				}
 				return
@@ -261,7 +261,7 @@ func (s *Subscriber) Subscribe(
 
 			if srResult.err != nil {
 				select {
-				case ch <- interfaces.SubCtxMessage{Err: srResult.err}:
+				case ch <- interfaces.SubBrokerMsg{Err: srResult.err}:
 				case <-ctx.Done():
 				}
 				return
@@ -327,5 +327,5 @@ func (s *Subscriber) Unsubscribe(ctx context.Context) *errors.UnSubError {
 
 // Verify that Subscriber implements the expected interfaces
 var (
-	_ interfaces.ISubCtx = (*Subscriber)(nil)
+	_ interfaces.ISubBroker = (*Subscriber)(nil)
 )

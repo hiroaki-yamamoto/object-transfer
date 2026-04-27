@@ -15,7 +15,7 @@ import (
 //
 // The Publisher struct provides functionality to publish messages to Redis streams
 // with support for consumer groups and stream size management. It implements the
-// IPubCtx interface to provide a consistent interface for publishing operations.
+// IPubBroker interface to provide a consistent interface for publishing operations.
 type Publisher struct {
 	// client is the Redis client used for publishing messages.
 	client goredis.Cmdable
