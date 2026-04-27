@@ -12,9 +12,9 @@ import (
 	"github.com/vmihailenco/msgpack/v5"
 
 	pubpkg "github.com/hiroaki-yamamoto/object-transfer/go/publisher"
-	redisconfig "github.com/hiroaki-yamamoto/object-transfer/go/redis/config"
-	"github.com/hiroaki-yamamoto/object-transfer/go/redis/publisher"
-	"github.com/hiroaki-yamamoto/object-transfer/go/redis/subscriber"
+	redisconfig "github.com/hiroaki-yamamoto/object-transfer/go/brokers/redis/config"
+	"github.com/hiroaki-yamamoto/object-transfer/go/brokers/redis/publisher"
+	"github.com/hiroaki-yamamoto/object-transfer/go/brokers/redis/subscriber"
 	subpkg "github.com/hiroaki-yamamoto/object-transfer/go/subscriber"
 )
 

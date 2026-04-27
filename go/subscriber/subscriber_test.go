@@ -10,7 +10,7 @@ import (
 	"github.com/vmihailenco/msgpack/v5"
 
 	"github.com/hiroaki-yamamoto/object-transfer/go/errors"
-	"github.com/hiroaki-yamamoto/object-transfer/go/interfaces"
+	"github.com/hiroaki-yamamoto/object-transfer/go/brokers/interfaces"
 	"github.com/hiroaki-yamamoto/object-transfer/go/subscriber"
 )
 
@@ -34,14 +34,14 @@ func (m *MockAck) Ack(ctx context.Context) *errors.AckError {
 	return nil
 }
 
-// MockSubCtx is a mock implementation of ISubCtxTrait
+// MockSubCtx is a mock implementation of ISubCtx
 type MockSubCtx struct {
-	messages []interfaces.SubCtxMessage
+	messages []interfaces.SubBrokerMsg
 	index    int
 }
 
-func (m *MockSubCtx) Subscribe(ctx context.Context) (<-chan interfaces.SubCtxMessage, *errors.SubError) {
-	ch := make(chan interfaces.SubCtxMessage)
+func (m *MockSubCtx) Subscribe(ctx context.Context) (<-chan interfaces.SubBrokerMsg, *errors.SubError) {
+	ch := make(chan interfaces.SubBrokerMsg)
 	go func() {
 		defer close(ch)
 		for _, msg := range m.messages {
@@ -82,13 +82,13 @@ var _ = Describe("Subscriber", func() {
 			{ID: 3, Name: "Test3"},
 		}
 
-		var messages []interfaces.SubCtxMessage
+		var messages []interfaces.SubBrokerMsg
 		for _, entity := range entities {
 			payload, err := marshal(entity)
 			Expect(err).NotTo(HaveOccurred())
 
 			ack := &MockAck{}
-			messages = append(messages, interfaces.SubCtxMessage{
+			messages = append(messages, interfaces.SubBrokerMsg{
 				Payload: payload,
 				Ack:     ack,
 			})
@@ -155,7 +155,7 @@ var _ = Describe("Subscriber", func() {
 			},
 		}
 
-		messages := []interfaces.SubCtxMessage{
+		messages := []interfaces.SubBrokerMsg{
 			{Payload: payload, Ack: ack},
 		}
 
@@ -183,7 +183,7 @@ var _ = Describe("Subscriber", func() {
 		invalidPayload := []byte("invalid json")
 		ack := &MockAck{}
 
-		messages := []interfaces.SubCtxMessage{
+		messages := []interfaces.SubBrokerMsg{
 			{Payload: invalidPayload, Ack: ack},
 		}
 
@@ -210,7 +210,7 @@ var _ = Describe("Subscriber", func() {
 		invalidPayload := []byte{0xFF, 0xFE, 0xFD} // Invalid msgpack
 		ack := &MockAck{}
 
-		messages := []interfaces.SubCtxMessage{
+		messages := []interfaces.SubBrokerMsg{
 			{Payload: invalidPayload, Ack: ack},
 		}
 

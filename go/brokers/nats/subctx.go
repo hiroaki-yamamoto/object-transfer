@@ -7,11 +7,11 @@ import (
 	natssdk "github.com/nats-io/nats.go"
 
 	otErrors "github.com/hiroaki-yamamoto/object-transfer/go/errors"
-	"github.com/hiroaki-yamamoto/object-transfer/go/interfaces"
+	"github.com/hiroaki-yamamoto/object-transfer/go/brokers/interfaces"
 )
 
 // PushSubCtx wraps a push-based NATS [nats.Subscription] and implements
-// [interfaces.ISubCtxTrait].
+// [interfaces.ISubBroker].
 type PushSubCtx struct {
 	sub *natssdk.Subscription
 }
@@ -21,8 +21,8 @@ type PushSubCtx struct {
 // an error.
 func (s *PushSubCtx) Subscribe(
 	ctx context.Context,
-) (<-chan interfaces.SubCtxMessage, *otErrors.SubError) {
-	ch := make(chan interfaces.SubCtxMessage)
+) (<-chan interfaces.SubBrokerMsg, *otErrors.SubError) {
+	ch := make(chan interfaces.SubBrokerMsg)
 	go func() {
 		defer close(ch)
 		for {
@@ -37,7 +37,7 @@ func (s *PushSubCtx) Subscribe(
 				}
 				// Propagate transport or other errors to the subscriber before exiting.
 				select {
-				case ch <- interfaces.SubCtxMessage{Err: otErrors.SubBrokerError(
+				case ch <- interfaces.SubBrokerMsg{Err: otErrors.SubBrokerError(
 					otErrors.NewBrokerError(err),
 				)}:
 				case <-ctx.Done():
@@ -45,7 +45,7 @@ func (s *PushSubCtx) Subscribe(
 				return
 			}
 			select {
-			case ch <- interfaces.SubCtxMessage{
+			case ch <- interfaces.SubBrokerMsg{
 				Payload: msg.Data,
 				Ack:     NewAck(msg),
 			}:
@@ -64,7 +64,7 @@ func NewPushSubCtx(sub *natssdk.Subscription) *PushSubCtx {
 }
 
 // PullSubCtx wraps a pull-based NATS [nats.Subscription] and implements
-// [interfaces.ISubCtxTrait].
+// [interfaces.ISubBroker].
 type PullSubCtx struct {
 	sub *natssdk.Subscription
 }
@@ -74,8 +74,8 @@ type PullSubCtx struct {
 // the subscription encounters an error.
 func (s *PullSubCtx) Subscribe(
 	ctx context.Context,
-) (<-chan interfaces.SubCtxMessage, *otErrors.SubError) {
-	ch := make(chan interfaces.SubCtxMessage)
+) (<-chan interfaces.SubBrokerMsg, *otErrors.SubError) {
+	ch := make(chan interfaces.SubBrokerMsg)
 	go func() {
 		defer close(ch)
 		for {
@@ -91,7 +91,7 @@ func (s *PullSubCtx) Subscribe(
 					// Surface non-timeout fetch errors to the consumer so they can
 					// distinguish broker/subscription failures from clean cancellation.
 					select {
-					case ch <- interfaces.SubCtxMessage{Err: otErrors.SubBrokerError(
+					case ch <- interfaces.SubBrokerMsg{Err: otErrors.SubBrokerError(
 						otErrors.NewBrokerError(err),
 					)}:
 					case <-ctx.Done():
@@ -100,7 +100,7 @@ func (s *PullSubCtx) Subscribe(
 				}
 				for _, msg := range msgs {
 					select {
-					case ch <- interfaces.SubCtxMessage{
+					case ch <- interfaces.SubBrokerMsg{
 						Payload: msg.Data,
 						Ack:     NewAck(msg),
 					}:
@@ -120,5 +120,5 @@ func NewPullSubCtx(sub *natssdk.Subscription) *PullSubCtx {
 	return &PullSubCtx{sub: sub}
 }
 
-var _ interfaces.ISubCtxTrait = (*PushSubCtx)(nil)
-var _ interfaces.ISubCtxTrait = (*PullSubCtx)(nil)
+var _ interfaces.ISubBroker = (*PushSubCtx)(nil)
+var _ interfaces.ISubBroker = (*PullSubCtx)(nil)

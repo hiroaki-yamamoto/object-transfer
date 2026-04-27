@@ -8,8 +8,9 @@ import (
 	"github.com/nats-io/nats.go"
 
 	otErrors "github.com/hiroaki-yamamoto/object-transfer/go/errors"
-	"github.com/hiroaki-yamamoto/object-transfer/go/interfaces"
-	natstypes "github.com/hiroaki-yamamoto/object-transfer/go/nats"
+	"github.com/hiroaki-yamamoto/object-transfer/go/brokers/interfaces"
+	natstypes "github.com/hiroaki-yamamoto/object-transfer/go/brokers/nats"
+	"github.com/hiroaki-yamamoto/object-transfer/go/unsub"
 )
 
 // SubFetcher fetches pull-based JetStream messages using the configured stream options.
@@ -41,8 +42,8 @@ func NewSubFetcher(ctx context.Context, jsCtx nats.JetStreamContext, opts *AckSu
 // Subscribe streams messages from the pull consumer, yielding their payloads along
 // with the associated acknowledgment handles.
 //
-// This implements [interfaces.ISubCtxTrait].
-func (f *SubFetcher) Subscribe(ctx context.Context) (<-chan interfaces.SubCtxMessage, *otErrors.SubError) {
+// This implements [interfaces.ISubBroker].
+func (f *SubFetcher) Subscribe(ctx context.Context) (<-chan interfaces.SubBrokerMsg, *otErrors.SubError) {
 	if len(f.options.streamConfig.Subjects) == 0 {
 		err := NewSubFetcherError(
 			fmt.Errorf("stream must have at least one subject"),
@@ -72,7 +73,7 @@ func (f *SubFetcher) Subscribe(ctx context.Context) (<-chan interfaces.SubCtxMes
 		)
 	}
 
-	ch := make(chan interfaces.SubCtxMessage)
+	ch := make(chan interfaces.SubBrokerMsg)
 	go func() {
 		defer close(ch)
 		for {
@@ -87,7 +88,7 @@ func (f *SubFetcher) Subscribe(ctx context.Context) (<-chan interfaces.SubCtxMes
 					}
 					// Emit the error downstream before exiting
 					select {
-					case ch <- interfaces.SubCtxMessage{Err: otErrors.SubBrokerError(
+					case ch <- interfaces.SubBrokerMsg{Err: otErrors.SubBrokerError(
 						otErrors.NewBrokerError(NewSubFetcherError(err)),
 					)}:
 					case <-ctx.Done():
@@ -96,7 +97,7 @@ func (f *SubFetcher) Subscribe(ctx context.Context) (<-chan interfaces.SubCtxMes
 				}
 				for _, msg := range msgs {
 					select {
-					case ch <- interfaces.SubCtxMessage{
+					case ch <- interfaces.SubBrokerMsg{
 						Payload: msg.Data,
 						Ack:     natstypes.NewAck(msg),
 					}:
@@ -129,5 +130,5 @@ func (f *SubFetcher) Unsubscribe(ctx context.Context) *otErrors.UnSubError {
 	return nil
 }
 
-var _ interfaces.ISubCtxTrait = (*SubFetcher)(nil)
-var _ interfaces.IUnSub = (*SubFetcher)(nil)
+var _ interfaces.ISubBroker = (*SubFetcher)(nil)
+var _ unsub.IUnSub = (*SubFetcher)(nil)

@@ -6,10 +6,10 @@ import (
 	natssdk "github.com/nats-io/nats.go"
 
 	otErrors "github.com/hiroaki-yamamoto/object-transfer/go/errors"
-	"github.com/hiroaki-yamamoto/object-transfer/go/interfaces"
+	"github.com/hiroaki-yamamoto/object-transfer/go/brokers/interfaces"
 )
 
-// PubCtx wraps a NATS JetStream context and implements [interfaces.IPubCtx].
+// PubCtx wraps a NATS JetStream context and implements [interfaces.IPubBroker].
 type PubCtx struct {
 	js natssdk.JetStreamContext
 }
@@ -28,4 +28,4 @@ func NewPubCtx(js natssdk.JetStreamContext) *PubCtx {
 	return &PubCtx{js: js}
 }
 
-var _ interfaces.IPubCtx = (*PubCtx)(nil)
+var _ interfaces.IPubBroker = (*PubCtx)(nil)

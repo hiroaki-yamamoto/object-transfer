@@ -6,8 +6,8 @@ import (
 	"github.com/hiroaki-yamamoto/object-transfer/go/errors"
 )
 
-// IPubCtx is a context capable of publishing raw byte payloads.
-type IPubCtx interface {
+// IPubBroker is a context capable of publishing raw byte payloads.
+type IPubBroker interface {
 	// Publish sends a raw payload to a subject on the underlying broker.
 	//
 	// Parameters:

@@ -5,12 +5,13 @@ import (
 	"errors"
 
 	goErrors "github.com/hiroaki-yamamoto/object-transfer/go/errors"
-	"github.com/hiroaki-yamamoto/object-transfer/go/interfaces"
+	"github.com/hiroaki-yamamoto/object-transfer/go/brokers/interfaces"
+	"github.com/hiroaki-yamamoto/object-transfer/go/unsub"
 )
 
 // Sub is a generic subscriber that deserializes messages and optionally acknowledges them.
 //
-// The subscriber relies on an ISubCtxTrait implementation for message retrieval, an
+// The subscriber relies on an ISubBroker implementation for message retrieval, an
 // unmarshal function for decoding, and an Option for acknowledgment behavior.
 //
 // # Example
@@ -44,9 +45,9 @@ import (
 //	  }
 //	}
 type Sub[T any] struct {
-	ctx         interfaces.ISubCtxTrait
+	ctx         interfaces.ISubBroker
 	unmarshalFn func([]byte, any) error
-	unsub       interfaces.IUnSub
+	unsub       unsub.IUnSub
 	options     *Option
 }
 
@@ -58,9 +59,9 @@ type Sub[T any] struct {
 //   - unsub: Unsubscribe handler to cancel the subscription when requested.
 //   - options: Subscription behavior such as auto-ack and payload format.
 func NewSub[T any](
-	ctx interfaces.ISubCtxTrait,
+	ctx interfaces.ISubBroker,
 	unmarshalFn func([]byte, any) error,
-	unsub interfaces.IUnSub,
+	unsub unsub.IUnSub,
 	options *Option,
 ) (*Sub[T], *goErrors.SubError) {
 	if ctx == nil {
@@ -92,7 +93,7 @@ func NewSub[T any](
 // # Returns
 // A channel that yields SubMessage items containing decoded messages and their ack handlers,
 // or an error if subscription fails.
-func (s *Sub[T]) Subscribe(ctx context.Context) (<-chan interfaces.SubMessage[T], *goErrors.SubError) {
+func (s *Sub[T]) Subscribe(ctx context.Context) (<-chan SubMessage[T], *goErrors.SubError) {
 	// Get the raw messages from the context
 	rawMessages, err := s.ctx.Subscribe(ctx)
 	if err != nil {
@@ -100,7 +101,7 @@ func (s *Sub[T]) Subscribe(ctx context.Context) (<-chan interfaces.SubMessage[T]
 	}
 
 	// Create output channel for decoded messages
-	messages := make(chan interfaces.SubMessage[T])
+	messages := make(chan SubMessage[T])
 
 	// Start goroutine to process and decode messages
 	go func() {
@@ -110,7 +111,7 @@ func (s *Sub[T]) Subscribe(ctx context.Context) (<-chan interfaces.SubMessage[T]
 			// Propagate transport-level errors from the raw subscription layer.
 			if rawMsg.Err != nil {
 				select {
-				case messages <- interfaces.SubMessage[T]{
+				case messages <- SubMessage[T]{
 					Error: rawMsg.Err,
 					Ack:   rawMsg.Ack,
 				}:
@@ -130,7 +131,7 @@ func (s *Sub[T]) Subscribe(ctx context.Context) (<-chan interfaces.SubMessage[T]
 
 			if decodeErr != nil {
 				select {
-				case messages <- interfaces.SubMessage[T]{
+				case messages <- SubMessage[T]{
 					Item:  nil,
 					Error: decodeErr,
 					Ack:   rawMsg.Ack,
@@ -145,7 +146,7 @@ func (s *Sub[T]) Subscribe(ctx context.Context) (<-chan interfaces.SubMessage[T]
 			if s.options.autoAck && rawMsg.Ack != nil {
 				if err := rawMsg.Ack.Ack(ctx); err != nil {
 					select {
-					case messages <- interfaces.SubMessage[T]{
+					case messages <- SubMessage[T]{
 						Item:  nil,
 						Error: goErrors.SubAckError(err),
 						Ack:   rawMsg.Ack,
@@ -164,7 +165,7 @@ func (s *Sub[T]) Subscribe(ctx context.Context) (<-chan interfaces.SubMessage[T]
 
 			// Send decoded message
 			select {
-			case messages <- interfaces.SubMessage[T]{
+			case messages <- SubMessage[T]{
 				Item:  item,
 				Error: nil,
 				Ack:   rawMsg.Ack,

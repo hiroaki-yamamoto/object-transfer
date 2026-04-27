@@ -6,16 +6,16 @@ import (
 	goredis "github.com/redis/go-redis/v9"
 
 	"github.com/hiroaki-yamamoto/object-transfer/go/errors"
-	bredis "github.com/hiroaki-yamamoto/object-transfer/go/redis"
-	"github.com/hiroaki-yamamoto/object-transfer/go/redis/config"
-	rediserrors "github.com/hiroaki-yamamoto/object-transfer/go/redis/errors"
+	bredis "github.com/hiroaki-yamamoto/object-transfer/go/brokers/redis"
+	"github.com/hiroaki-yamamoto/object-transfer/go/brokers/redis/config"
+	rediserrors "github.com/hiroaki-yamamoto/object-transfer/go/brokers/redis/errors"
 )
 
 // Publisher is a Redis-based message publisher that sends messages to Redis streams.
 //
 // The Publisher struct provides functionality to publish messages to Redis streams
 // with support for consumer groups and stream size management. It implements the
-// IPubCtx interface to provide a consistent interface for publishing operations.
+// IPubBroker interface to provide a consistent interface for publishing operations.
 type Publisher struct {
 	// client is the Redis client used for publishing messages.
 	client goredis.Cmdable

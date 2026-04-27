@@ -11,8 +11,8 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/vmihailenco/msgpack/v5"
 
-	"github.com/hiroaki-yamamoto/object-transfer/go/nats"
-	"github.com/hiroaki-yamamoto/object-transfer/go/nats/subfetcher"
+	"github.com/hiroaki-yamamoto/object-transfer/go/brokers/nats"
+	"github.com/hiroaki-yamamoto/object-transfer/go/brokers/nats/subfetcher"
 	"github.com/hiroaki-yamamoto/object-transfer/go/publisher"
 	"github.com/hiroaki-yamamoto/object-transfer/go/subscriber"
 )

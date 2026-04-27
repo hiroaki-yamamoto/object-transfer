@@ -6,7 +6,7 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	"github.com/hiroaki-yamamoto/object-transfer/go/errors"
-	rediserrors "github.com/hiroaki-yamamoto/object-transfer/go/redis/errors"
+	rediserrors "github.com/hiroaki-yamamoto/object-transfer/go/brokers/redis/errors"
 )
 
 // Ack represents an acknowledgment for a message in a Redis stream consumer group.

@@ -4,13 +4,13 @@ import (
 	"context"
 
 	"github.com/hiroaki-yamamoto/object-transfer/go/errors"
-	"github.com/hiroaki-yamamoto/object-transfer/go/interfaces"
+	"github.com/hiroaki-yamamoto/object-transfer/go/brokers/interfaces"
 )
 
 // Pub is a generic publisher for serializable messages using a pluggable context.
 //
 // The publisher encodes messages according to the configured marshal function and
-// delegates the actual publish call to an injected IPubCtx so it can
+// delegates the actual publish call to an injected IPubBroker so it can
 // work with different backends.
 //
 // # Example
@@ -29,7 +29,7 @@ import (
 //	event := UserCreated{ID: 42, Name: "Jane Doe"}
 //	publisher.Publish(ctx, &event)
 type Pub[T any] struct {
-	ctx     interfaces.IPubCtx
+	ctx     interfaces.IPubBroker
 	subject string
 	marshal func(v any) ([]byte, error)
 }
@@ -41,7 +41,7 @@ type Pub[T any] struct {
 //   - subject: Destination subject or topic to send messages to.
 //   - marshal: Function used to serialize published items into bytes.
 func NewPub[T any](
-	ctx interfaces.IPubCtx,
+	ctx interfaces.IPubBroker,
 	subject string,
 	marshal func(v any) ([]byte, error),
 ) *Pub[T] {
