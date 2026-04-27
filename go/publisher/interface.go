@@ -1,4 +1,4 @@
-package interfaces
+package publisher
 
 import (
 	"context"
@@ -17,5 +17,5 @@ type IPublish interface {
 	// - obj: The typed item to serialize and send to the backing transport
 	//
 	// Returns an error if publishing fails.
-	Publish(ctx context.Context, obj interface{}) *errors.PubError
+	Publish(ctx context.Context, obj any) *errors.PubError
 }
