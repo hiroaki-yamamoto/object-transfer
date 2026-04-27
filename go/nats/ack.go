@@ -8,7 +8,7 @@ import (
 	"github.com/hiroaki-yamamoto/object-transfer/go/errors"
 )
 
-// Ack wraps a [nats.Msg] and implements [interfaces.IAck].
+// Ack wraps a [nats.Msg] and implements [ack.IAck].
 type Ack struct {
 	msg *nats.Msg
 }

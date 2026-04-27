@@ -3,6 +3,7 @@ package interfaces
 import (
 	"context"
 
+	"github.com/hiroaki-yamamoto/object-transfer/go/ack"
 	"github.com/hiroaki-yamamoto/object-transfer/go/errors"
 )
 
@@ -11,7 +12,7 @@ import (
 // and Payload will be nil.
 type SubCtxMessage struct {
 	Payload []byte
-	Ack     IAck
+	Ack     ack.IAck
 	Err     *errors.SubError
 }
 

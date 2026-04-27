@@ -92,7 +92,7 @@ func NewSub[T any](
 // # Returns
 // A channel that yields SubMessage items containing decoded messages and their ack handlers,
 // or an error if subscription fails.
-func (s *Sub[T]) Subscribe(ctx context.Context) (<-chan interfaces.SubMessage[T], *goErrors.SubError) {
+func (s *Sub[T]) Subscribe(ctx context.Context) (<-chan SubMessage[T], *goErrors.SubError) {
 	// Get the raw messages from the context
 	rawMessages, err := s.ctx.Subscribe(ctx)
 	if err != nil {
@@ -100,7 +100,7 @@ func (s *Sub[T]) Subscribe(ctx context.Context) (<-chan interfaces.SubMessage[T]
 	}
 
 	// Create output channel for decoded messages
-	messages := make(chan interfaces.SubMessage[T])
+	messages := make(chan SubMessage[T])
 
 	// Start goroutine to process and decode messages
 	go func() {
@@ -110,7 +110,7 @@ func (s *Sub[T]) Subscribe(ctx context.Context) (<-chan interfaces.SubMessage[T]
 			// Propagate transport-level errors from the raw subscription layer.
 			if rawMsg.Err != nil {
 				select {
-				case messages <- interfaces.SubMessage[T]{
+				case messages <- SubMessage[T]{
 					Error: rawMsg.Err,
 					Ack:   rawMsg.Ack,
 				}:
@@ -130,7 +130,7 @@ func (s *Sub[T]) Subscribe(ctx context.Context) (<-chan interfaces.SubMessage[T]
 
 			if decodeErr != nil {
 				select {
-				case messages <- interfaces.SubMessage[T]{
+				case messages <- SubMessage[T]{
 					Item:  nil,
 					Error: decodeErr,
 					Ack:   rawMsg.Ack,
@@ -145,7 +145,7 @@ func (s *Sub[T]) Subscribe(ctx context.Context) (<-chan interfaces.SubMessage[T]
 			if s.options.autoAck && rawMsg.Ack != nil {
 				if err := rawMsg.Ack.Ack(ctx); err != nil {
 					select {
-					case messages <- interfaces.SubMessage[T]{
+					case messages <- SubMessage[T]{
 						Item:  nil,
 						Error: goErrors.SubAckError(err),
 						Ack:   rawMsg.Ack,
@@ -164,7 +164,7 @@ func (s *Sub[T]) Subscribe(ctx context.Context) (<-chan interfaces.SubMessage[T]
 
 			// Send decoded message
 			select {
-			case messages <- interfaces.SubMessage[T]{
+			case messages <- SubMessage[T]{
 				Item:  item,
 				Error: nil,
 				Ack:   rawMsg.Ack,

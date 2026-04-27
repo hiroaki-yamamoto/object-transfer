@@ -1,8 +1,9 @@
-package interfaces
+package subscriber
 
 import (
 	"context"
 
+	"github.com/hiroaki-yamamoto/object-transfer/go/ack"
 	"github.com/hiroaki-yamamoto/object-transfer/go/errors"
 )
 
@@ -10,7 +11,7 @@ import (
 type SubMessage[T any] struct {
 	Item  *T
 	Error *errors.SubError
-	Ack   IAck
+	Ack   ack.IAck
 }
 
 // ISub is a subscription interface returning a stream of decoded items and ack handles.
