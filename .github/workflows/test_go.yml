@@ -7,6 +7,9 @@ on:
       - "go/**"
       - ".github/workflows/test_go.yml"
   pull_request:
+    paths:
+      - "go/**"
+      - ".github/workflows/test_go.yml"
 
 jobs:
   test_go:

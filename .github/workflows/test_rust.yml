@@ -9,6 +9,11 @@ on:
       - "docker-compose.yml"
       - "Makefile"
   pull_request:
+    paths:
+      - "rust/**"
+      - ".github/workflows/test_rust.yml"
+      - "docker-compose.yml"
+      - "Makefile"
 
 jobs:
   test_rust:
