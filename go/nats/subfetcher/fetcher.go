@@ -10,6 +10,7 @@ import (
 	otErrors "github.com/hiroaki-yamamoto/object-transfer/go/errors"
 	"github.com/hiroaki-yamamoto/object-transfer/go/interfaces"
 	natstypes "github.com/hiroaki-yamamoto/object-transfer/go/nats"
+	"github.com/hiroaki-yamamoto/object-transfer/go/unsub"
 )
 
 // SubFetcher fetches pull-based JetStream messages using the configured stream options.
@@ -130,4 +131,4 @@ func (f *SubFetcher) Unsubscribe(ctx context.Context) *otErrors.UnSubError {
 }
 
 var _ interfaces.ISubCtx = (*SubFetcher)(nil)
-var _ interfaces.IUnSub = (*SubFetcher)(nil)
+var _ unsub.IUnSub = (*SubFetcher)(nil)

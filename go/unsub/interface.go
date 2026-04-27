@@ -1,4 +1,4 @@
-package interfaces
+package unsub
 
 import (
 	"context"

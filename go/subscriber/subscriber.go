@@ -6,6 +6,7 @@ import (
 
 	goErrors "github.com/hiroaki-yamamoto/object-transfer/go/errors"
 	"github.com/hiroaki-yamamoto/object-transfer/go/interfaces"
+	"github.com/hiroaki-yamamoto/object-transfer/go/unsub"
 )
 
 // Sub is a generic subscriber that deserializes messages and optionally acknowledges them.
@@ -46,7 +47,7 @@ import (
 type Sub[T any] struct {
 	ctx         interfaces.ISubCtx
 	unmarshalFn func([]byte, any) error
-	unsub       interfaces.IUnSub
+	unsub       unsub.IUnSub
 	options     *Option
 }
 
@@ -60,7 +61,7 @@ type Sub[T any] struct {
 func NewSub[T any](
 	ctx interfaces.ISubCtx,
 	unmarshalFn func([]byte, any) error,
-	unsub interfaces.IUnSub,
+	unsub unsub.IUnSub,
 	options *Option,
 ) (*Sub[T], *goErrors.SubError) {
 	if ctx == nil {
