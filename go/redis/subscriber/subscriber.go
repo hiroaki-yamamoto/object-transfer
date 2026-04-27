@@ -327,5 +327,5 @@ func (s *Subscriber) Unsubscribe(ctx context.Context) *errors.UnSubError {
 
 // Verify that Subscriber implements the expected interfaces
 var (
-	_ interfaces.ISubCtxTrait = (*Subscriber)(nil)
+	_ interfaces.ISubCtx = (*Subscriber)(nil)
 )

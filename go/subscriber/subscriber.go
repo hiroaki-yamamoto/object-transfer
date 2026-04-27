@@ -10,7 +10,7 @@ import (
 
 // Sub is a generic subscriber that deserializes messages and optionally acknowledges them.
 //
-// The subscriber relies on an ISubCtxTrait implementation for message retrieval, an
+// The subscriber relies on an ISubCtx implementation for message retrieval, an
 // unmarshal function for decoding, and an Option for acknowledgment behavior.
 //
 // # Example
@@ -44,7 +44,7 @@ import (
 //	  }
 //	}
 type Sub[T any] struct {
-	ctx         interfaces.ISubCtxTrait
+	ctx         interfaces.ISubCtx
 	unmarshalFn func([]byte, any) error
 	unsub       interfaces.IUnSub
 	options     *Option
@@ -58,7 +58,7 @@ type Sub[T any] struct {
 //   - unsub: Unsubscribe handler to cancel the subscription when requested.
 //   - options: Subscription behavior such as auto-ack and payload format.
 func NewSub[T any](
-	ctx interfaces.ISubCtxTrait,
+	ctx interfaces.ISubCtx,
 	unmarshalFn func([]byte, any) error,
 	unsub interfaces.IUnSub,
 	options *Option,

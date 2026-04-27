@@ -41,7 +41,7 @@ func NewSubFetcher(ctx context.Context, jsCtx nats.JetStreamContext, opts *AckSu
 // Subscribe streams messages from the pull consumer, yielding their payloads along
 // with the associated acknowledgment handles.
 //
-// This implements [interfaces.ISubCtxTrait].
+// This implements [interfaces.ISubCtx].
 func (f *SubFetcher) Subscribe(ctx context.Context) (<-chan interfaces.SubCtxMessage, *otErrors.SubError) {
 	if len(f.options.streamConfig.Subjects) == 0 {
 		err := NewSubFetcherError(
@@ -129,5 +129,5 @@ func (f *SubFetcher) Unsubscribe(ctx context.Context) *otErrors.UnSubError {
 	return nil
 }
 
-var _ interfaces.ISubCtxTrait = (*SubFetcher)(nil)
+var _ interfaces.ISubCtx = (*SubFetcher)(nil)
 var _ interfaces.IUnSub = (*SubFetcher)(nil)

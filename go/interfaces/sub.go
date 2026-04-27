@@ -13,8 +13,8 @@ type SubMessage[T any] struct {
 	Ack   IAck
 }
 
-// ISubTrait is a subscription interface returning a stream of decoded items and ack handles.
-type ISubTrait[T any] interface {
+// ISub is a subscription interface returning a stream of decoded items and ack handles.
+type ISub[T any] interface {
 	// Subscribe returns a channel of SubMessage containing decoded items and their acknowledgment handlers.
 	// The channel is closed when the subscription ends.
 	// Errors during deserialization or message retrieval are sent as part of the channel.

@@ -11,7 +11,7 @@ import (
 )
 
 // PushSubCtx wraps a push-based NATS [nats.Subscription] and implements
-// [interfaces.ISubCtxTrait].
+// [interfaces.ISubCtx].
 type PushSubCtx struct {
 	sub *natssdk.Subscription
 }
@@ -64,7 +64,7 @@ func NewPushSubCtx(sub *natssdk.Subscription) *PushSubCtx {
 }
 
 // PullSubCtx wraps a pull-based NATS [nats.Subscription] and implements
-// [interfaces.ISubCtxTrait].
+// [interfaces.ISubCtx].
 type PullSubCtx struct {
 	sub *natssdk.Subscription
 }
@@ -120,5 +120,5 @@ func NewPullSubCtx(sub *natssdk.Subscription) *PullSubCtx {
 	return &PullSubCtx{sub: sub}
 }
 
-var _ interfaces.ISubCtxTrait = (*PushSubCtx)(nil)
-var _ interfaces.ISubCtxTrait = (*PullSubCtx)(nil)
+var _ interfaces.ISubCtx = (*PushSubCtx)(nil)
+var _ interfaces.ISubCtx = (*PullSubCtx)(nil)

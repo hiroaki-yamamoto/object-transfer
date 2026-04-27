@@ -34,7 +34,7 @@ func (m *MockAck) Ack(ctx context.Context) *errors.AckError {
 	return nil
 }
 
-// MockSubCtx is a mock implementation of ISubCtxTrait
+// MockSubCtx is a mock implementation of ISubCtx
 type MockSubCtx struct {
 	messages []interfaces.SubCtxMessage
 	index    int
