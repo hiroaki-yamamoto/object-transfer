@@ -13,7 +13,7 @@ import (
 type SubBrokerMsg struct {
 	Payload []byte
 	Ack     ack.IAck
-	Err     *errors.SubError
+	Err     *errors.BrokerError
 }
 
 // ISubBroker is a context capable of producing a stream of raw messages with ack handles.
@@ -25,5 +25,5 @@ type ISubBroker interface {
 	// - ctx: context for cancellation and timeouts
 	//
 	// Returns a channel that yields messages, or an error if the subscription cannot be established.
-	Subscribe(ctx context.Context) (<-chan SubBrokerMsg, *errors.SubError)
+	Subscribe(ctx context.Context) (<-chan SubBrokerMsg, *errors.BrokerError)
 }

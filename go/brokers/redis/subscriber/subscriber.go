@@ -74,10 +74,8 @@ func (s *Subscriber) handleStreamIDs(
 		data, ok := msg.Values["data"]
 		if !ok {
 			results = append(results, interfaces.SubBrokerMsg{
-				Err: errors.SubBrokerError(
-					errors.NewBrokerError(
-						rediserrors.NewSubscribeMissingDataFieldError(msg.ID),
-					),
+				Err: errors.NewBrokerError(
+					rediserrors.NewSubscribeMissingDataFieldError(msg.ID),
 				),
 				Ack: ack,
 			})
@@ -93,10 +91,8 @@ func (s *Subscriber) handleStreamIDs(
 			payload = v
 		default:
 			results = append(results, interfaces.SubBrokerMsg{
-				Err: errors.SubBrokerError(
-					errors.NewBrokerError(
-						rediserrors.NewSubscribeInvalidDataTypeError(msg.ID, data),
-					),
+				Err: errors.NewBrokerError(
+					rediserrors.NewSubscribeInvalidDataTypeError(msg.ID, data),
 				),
 				Ack: ack,
 			})
@@ -126,7 +122,7 @@ func (s *Subscriber) handleStreamIDs(
 func (s *Subscriber) autoclaim(
 	ctx context.Context,
 	autoClaimID string,
-) ([]redis.XMessage, string, *errors.SubError) {
+) ([]redis.XMessage, string, *errors.BrokerError) {
 	if s.cfg.AutoClaim == 0 {
 		return []redis.XMessage{}, autoClaimID, nil
 	}
@@ -144,7 +140,7 @@ func (s *Subscriber) autoclaim(
 		brokerErr := errors.NewBrokerError(
 			rediserrors.NewSubscribeAutoClaimError(err),
 		)
-		return nil, "", errors.SubBrokerError(brokerErr)
+		return nil, "", brokerErr
 	}
 
 	return messages, next, nil
@@ -166,14 +162,12 @@ func (s *Subscriber) autoclaim(
 // A channel that yields SubBrokerMsg containing payload and ack handler, or an error if subscription fails.
 func (s *Subscriber) Subscribe(
 	ctx context.Context,
-) (<-chan interfaces.SubBrokerMsg, *errors.SubError) {
+) (<-chan interfaces.SubBrokerMsg, *errors.BrokerError) {
 	// Create the consumer group if it doesn't exist
 	err := bredis.MakeStreamGroup(ctx, s.client, s.cfg.TopicName, s.cfg.GroupName)
 	if err != nil {
-		return nil, errors.SubBrokerError(
-			errors.NewBrokerError(
-				rediserrors.NewSubscribeGroupCreationError(err),
-			),
+		return nil, errors.NewBrokerError(
+			rediserrors.NewSubscribeGroupCreationError(err),
 		)
 	}
 
@@ -195,11 +189,11 @@ func (s *Subscriber) Subscribe(
 			type autoClaimResult struct {
 				messages []redis.XMessage
 				nextID   string
-				err      *errors.SubError
+				err      *errors.BrokerError
 			}
 			type streamReadResult struct {
 				messages []redis.XMessage
-				err      *errors.SubError
+				err      *errors.BrokerError
 			}
 
 			autoClaimChan := make(chan autoClaimResult, 1)
@@ -223,10 +217,8 @@ func (s *Subscriber) Subscribe(
 				if err == nil && len(result) > 0 {
 					messages = result[0].Messages
 				} else if err != redis.Nil && err != nil {
-					streamReadChan <- streamReadResult{nil, errors.SubBrokerError(
-						errors.NewBrokerError(
-							rediserrors.NewSubscribeReadError(err),
-						),
+					streamReadChan <- streamReadResult{nil, errors.NewBrokerError(
+						rediserrors.NewSubscribeReadError(err),
 					)}
 					return
 				}

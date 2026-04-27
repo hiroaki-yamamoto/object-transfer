@@ -21,10 +21,10 @@ type TestEntity struct {
 
 // MockPubCtx is a mock implementation of IPubCtx for testing
 type MockPubCtx struct {
-	publishFunc func(ctx context.Context, topic string, payload []byte) *errors.PubError
+	publishFunc func(ctx context.Context, topic string, payload []byte) *errors.BrokerError
 }
 
-func (m *MockPubCtx) Publish(ctx context.Context, topic string, payload []byte) *errors.PubError {
+func (m *MockPubCtx) Publish(ctx context.Context, topic string, payload []byte) *errors.BrokerError {
 	if m.publishFunc != nil {
 		return m.publishFunc(ctx, topic, payload)
 	}
@@ -43,11 +43,11 @@ var _ = Describe("Publisher", func() {
 	testPublish := func(name string, marshal func(any) ([]byte, error)) {
 		entity := TestEntity{ID: 1, Name: fmt.Sprintf("Test Name: %v", name)}
 		subject := fmt.Sprintf("test.subject.%v", name)
-		
+
 		expectedPayload, err := marshal(entity)
 		Expect(err).NotTo(HaveOccurred())
 
-		mockCtx.publishFunc = func(c context.Context, topic string, payload []byte) *errors.PubError {
+		mockCtx.publishFunc = func(c context.Context, topic string, payload []byte) *errors.BrokerError {
 			Expect(topic).To(Equal(subject))
 			Expect(payload).To(Equal(expectedPayload))
 			return nil
@@ -71,8 +71,8 @@ var _ = Describe("Publisher", func() {
 		subject := "test.subject.error"
 		testErr := fmt.Errorf("publish failed")
 
-		mockCtx.publishFunc = func(c context.Context, topic string, payload []byte) *errors.PubError {
-			return errors.PubBrokerError(errors.NewBrokerError(testErr))
+		mockCtx.publishFunc = func(c context.Context, topic string, payload []byte) *errors.BrokerError {
+			return errors.NewBrokerError(testErr)
 		}
 
 		pub := publisher.NewPub[TestEntity](mockCtx, subject, json.Marshal)

@@ -21,7 +21,7 @@ type PushSubCtx struct {
 // an error.
 func (s *PushSubCtx) Subscribe(
 	ctx context.Context,
-) (<-chan interfaces.SubBrokerMsg, *otErrors.SubError) {
+) (<-chan interfaces.SubBrokerMsg, *otErrors.BrokerError) {
 	ch := make(chan interfaces.SubBrokerMsg)
 	go func() {
 		defer close(ch)
@@ -37,9 +37,7 @@ func (s *PushSubCtx) Subscribe(
 				}
 				// Propagate transport or other errors to the subscriber before exiting.
 				select {
-				case ch <- interfaces.SubBrokerMsg{Err: otErrors.SubBrokerError(
-					otErrors.NewBrokerError(err),
-				)}:
+				case ch <- interfaces.SubBrokerMsg{Err: otErrors.NewBrokerError(err)}:
 				case <-ctx.Done():
 				}
 				return
@@ -74,7 +72,7 @@ type PullSubCtx struct {
 // the subscription encounters an error.
 func (s *PullSubCtx) Subscribe(
 	ctx context.Context,
-) (<-chan interfaces.SubBrokerMsg, *otErrors.SubError) {
+) (<-chan interfaces.SubBrokerMsg, *otErrors.BrokerError) {
 	ch := make(chan interfaces.SubBrokerMsg)
 	go func() {
 		defer close(ch)
@@ -91,9 +89,7 @@ func (s *PullSubCtx) Subscribe(
 					// Surface non-timeout fetch errors to the consumer so they can
 					// distinguish broker/subscription failures from clean cancellation.
 					select {
-					case ch <- interfaces.SubBrokerMsg{Err: otErrors.SubBrokerError(
-						otErrors.NewBrokerError(err),
-					)}:
+					case ch <- interfaces.SubBrokerMsg{Err: otErrors.NewBrokerError(err)}:
 					case <-ctx.Done():
 					}
 					return

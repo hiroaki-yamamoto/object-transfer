@@ -9,8 +9,8 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/vmihailenco/msgpack/v5"
 
-	"github.com/hiroaki-yamamoto/object-transfer/go/errors"
 	"github.com/hiroaki-yamamoto/object-transfer/go/brokers/interfaces"
+	"github.com/hiroaki-yamamoto/object-transfer/go/errors"
 	"github.com/hiroaki-yamamoto/object-transfer/go/subscriber"
 )
 
@@ -40,7 +40,7 @@ type MockSubCtx struct {
 	index    int
 }
 
-func (m *MockSubCtx) Subscribe(ctx context.Context) (<-chan interfaces.SubBrokerMsg, *errors.SubError) {
+func (m *MockSubCtx) Subscribe(ctx context.Context) (<-chan interfaces.SubBrokerMsg, *errors.BrokerError) {
 	ch := make(chan interfaces.SubBrokerMsg)
 	go func() {
 		defer close(ch)
@@ -54,7 +54,6 @@ func (m *MockSubCtx) Subscribe(ctx context.Context) (<-chan interfaces.SubBroker
 	}()
 	return ch, nil
 }
-
 
 // MockUnSub is a mock implementation of IUnSub
 type MockUnSub struct {

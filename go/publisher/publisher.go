@@ -66,7 +66,7 @@ func (p *Pub[T]) Publish(ctx context.Context, obj interface{}) *errors.PubError 
 
 	pubErr := p.ctx.Publish(ctx, p.subject, payload)
 	if pubErr != nil {
-		return pubErr
+		return errors.PubBrokerError(pubErr)
 	}
 
 	return nil

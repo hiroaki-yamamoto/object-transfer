@@ -55,8 +55,8 @@ func New(client goredis.Cmdable, cfg *config.PublisherConfig) *Publisher {
 //
 // # Returns
 //
-// An errors.PubError if the operation fails.
-func (p *Publisher) Publish(ctx context.Context, topic string, payload []byte) *errors.PubError {
+// A *errors.BrokerError if the operation fails.
+func (p *Publisher) Publish(ctx context.Context, topic string, payload []byte) *errors.BrokerError {
 	groupName := topic
 	if p.cfg.GroupName != nil {
 		groupName = *p.cfg.GroupName
@@ -65,10 +65,8 @@ func (p *Publisher) Publish(ctx context.Context, topic string, payload []byte) *
 	// Ensure the stream consumer group exists
 	err := bredis.MakeStreamGroup(ctx, p.client, topic, groupName)
 	if err != nil {
-		return errors.PubBrokerError(
-			errors.NewBrokerError(
-				rediserrors.NewGroupCreationError(err),
-			),
+		return errors.NewBrokerError(
+			rediserrors.NewGroupCreationError(err),
 		)
 	}
 
@@ -80,10 +78,8 @@ func (p *Publisher) Publish(ctx context.Context, topic string, payload []byte) *
 		Values: []interface{}{"data", payload},
 	}).Err()
 	if err != nil {
-		return errors.PubBrokerError(
-			errors.NewBrokerError(
-				rediserrors.NewPushError(err),
-			),
+		return errors.NewBrokerError(
+			rediserrors.NewPushError(err),
 		)
 	}
 

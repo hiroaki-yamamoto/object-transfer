@@ -97,7 +97,7 @@ func (s *Sub[T]) Subscribe(ctx context.Context) (<-chan SubMessage[T], *goErrors
 	// Get the raw messages from the context
 	rawMessages, err := s.ctx.Subscribe(ctx)
 	if err != nil {
-		return nil, err
+		return nil, goErrors.SubBrokerError(err)
 	}
 
 	// Create output channel for decoded messages
@@ -111,8 +111,8 @@ func (s *Sub[T]) Subscribe(ctx context.Context) (<-chan SubMessage[T], *goErrors
 			// Propagate transport-level errors from the raw subscription layer.
 			if rawMsg.Err != nil {
 				select {
-				case messages <- SubMessage[T]{
-					Error: rawMsg.Err,
+			case messages <- SubMessage[T]{
+					Error: goErrors.SubBrokerError(rawMsg.Err),
 					Ack:   rawMsg.Ack,
 				}:
 				case <-ctx.Done():

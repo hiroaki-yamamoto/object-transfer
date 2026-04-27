@@ -43,22 +43,18 @@ func NewSubFetcher(ctx context.Context, jsCtx nats.JetStreamContext, opts *AckSu
 // with the associated acknowledgment handles.
 //
 // This implements [interfaces.ISubBroker].
-func (f *SubFetcher) Subscribe(ctx context.Context) (<-chan interfaces.SubBrokerMsg, *otErrors.SubError) {
+func (f *SubFetcher) Subscribe(ctx context.Context) (<-chan interfaces.SubBrokerMsg, *otErrors.BrokerError) {
 	if len(f.options.streamConfig.Subjects) == 0 {
 		err := NewSubFetcherError(
 			fmt.Errorf("stream must have at least one subject"),
 		)
-		return nil, otErrors.SubBrokerError(
-			otErrors.NewBrokerError(err),
-		)
+		return nil, otErrors.NewBrokerError(err)
 	}
 	if len(f.options.streamConfig.Subjects) > 1 {
 		err := NewSubFetcherError(
 			fmt.Errorf("multiple subjects configured on stream; only a single subject is supported"),
 		)
-		return nil, otErrors.SubBrokerError(
-			otErrors.NewBrokerError(err),
-		)
+		return nil, otErrors.NewBrokerError(err)
 	}
 	subject := f.options.streamConfig.Subjects[0]
 
@@ -68,9 +64,7 @@ func (f *SubFetcher) Subscribe(ctx context.Context) (<-chan interfaces.SubBroker
 		nats.Context(ctx),
 	)
 	if err != nil {
-		return nil, otErrors.SubBrokerError(
-			otErrors.NewBrokerError(NewSubFetcherError(err)),
-		)
+		return nil, otErrors.NewBrokerError(NewSubFetcherError(err))
 	}
 
 	ch := make(chan interfaces.SubBrokerMsg)
@@ -88,9 +82,7 @@ func (f *SubFetcher) Subscribe(ctx context.Context) (<-chan interfaces.SubBroker
 					}
 					// Emit the error downstream before exiting
 					select {
-					case ch <- interfaces.SubBrokerMsg{Err: otErrors.SubBrokerError(
-						otErrors.NewBrokerError(NewSubFetcherError(err)),
-					)}:
+					case ch <- interfaces.SubBrokerMsg{Err: otErrors.NewBrokerError(NewSubFetcherError(err))}:
 					case <-ctx.Done():
 					}
 					return

@@ -16,5 +16,5 @@ type IPubBroker interface {
 	// - payload: Serialized bytes to forward to the transport
 	//
 	// Returns an error if publishing fails.
-	Publish(ctx context.Context, topic string, payload []byte) *errors.PubError
+	Publish(ctx context.Context, topic string, payload []byte) *errors.BrokerError
 }
