@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/hiroaki-yamamoto/object-transfer/go/errors"
-	"github.com/hiroaki-yamamoto/object-transfer/go/interfaces"
+	"github.com/hiroaki-yamamoto/object-transfer/go/brokers/interfaces"
 )
 
 // Pub is a generic publisher for serializable messages using a pluggable context.

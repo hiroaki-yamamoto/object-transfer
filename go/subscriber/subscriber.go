@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	goErrors "github.com/hiroaki-yamamoto/object-transfer/go/errors"
-	"github.com/hiroaki-yamamoto/object-transfer/go/interfaces"
+	"github.com/hiroaki-yamamoto/object-transfer/go/brokers/interfaces"
 	"github.com/hiroaki-yamamoto/object-transfer/go/unsub"
 )
 

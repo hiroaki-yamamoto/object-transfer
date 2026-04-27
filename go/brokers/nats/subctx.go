@@ -7,7 +7,7 @@ import (
 	natssdk "github.com/nats-io/nats.go"
 
 	otErrors "github.com/hiroaki-yamamoto/object-transfer/go/errors"
-	"github.com/hiroaki-yamamoto/object-transfer/go/interfaces"
+	"github.com/hiroaki-yamamoto/object-transfer/go/brokers/interfaces"
 )
 
 // PushSubCtx wraps a push-based NATS [nats.Subscription] and implements

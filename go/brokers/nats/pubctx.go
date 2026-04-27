@@ -6,7 +6,7 @@ import (
 	natssdk "github.com/nats-io/nats.go"
 
 	otErrors "github.com/hiroaki-yamamoto/object-transfer/go/errors"
-	"github.com/hiroaki-yamamoto/object-transfer/go/interfaces"
+	"github.com/hiroaki-yamamoto/object-transfer/go/brokers/interfaces"
 )
 
 // PubCtx wraps a NATS JetStream context and implements [interfaces.IPubBroker].

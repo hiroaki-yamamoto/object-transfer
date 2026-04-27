@@ -8,8 +8,8 @@ import (
 	"github.com/nats-io/nats.go"
 
 	otErrors "github.com/hiroaki-yamamoto/object-transfer/go/errors"
-	"github.com/hiroaki-yamamoto/object-transfer/go/interfaces"
-	natstypes "github.com/hiroaki-yamamoto/object-transfer/go/nats"
+	"github.com/hiroaki-yamamoto/object-transfer/go/brokers/interfaces"
+	natstypes "github.com/hiroaki-yamamoto/object-transfer/go/brokers/nats"
 	"github.com/hiroaki-yamamoto/object-transfer/go/unsub"
 )
 

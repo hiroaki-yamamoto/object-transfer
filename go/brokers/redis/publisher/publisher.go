@@ -6,9 +6,9 @@ import (
 	goredis "github.com/redis/go-redis/v9"
 
 	"github.com/hiroaki-yamamoto/object-transfer/go/errors"
-	bredis "github.com/hiroaki-yamamoto/object-transfer/go/redis"
-	"github.com/hiroaki-yamamoto/object-transfer/go/redis/config"
-	rediserrors "github.com/hiroaki-yamamoto/object-transfer/go/redis/errors"
+	bredis "github.com/hiroaki-yamamoto/object-transfer/go/brokers/redis"
+	"github.com/hiroaki-yamamoto/object-transfer/go/brokers/redis/config"
+	rediserrors "github.com/hiroaki-yamamoto/object-transfer/go/brokers/redis/errors"
 )
 
 // Publisher is a Redis-based message publisher that sends messages to Redis streams.

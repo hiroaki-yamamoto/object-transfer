@@ -7,11 +7,11 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	"github.com/hiroaki-yamamoto/object-transfer/go/errors"
-	bredis "github.com/hiroaki-yamamoto/object-transfer/go/redis"
-	"github.com/hiroaki-yamamoto/object-transfer/go/redis/config"
-	rediserrors "github.com/hiroaki-yamamoto/object-transfer/go/redis/errors"
+	bredis "github.com/hiroaki-yamamoto/object-transfer/go/brokers/redis"
+	"github.com/hiroaki-yamamoto/object-transfer/go/brokers/redis/config"
+	rediserrors "github.com/hiroaki-yamamoto/object-transfer/go/brokers/redis/errors"
 
-	"github.com/hiroaki-yamamoto/object-transfer/go/interfaces"
+	"github.com/hiroaki-yamamoto/object-transfer/go/brokers/interfaces"
 )
 
 // Subscriber is a Redis-based message subscriber that handles subscription to Redis streams.

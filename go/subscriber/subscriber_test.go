@@ -10,7 +10,7 @@ import (
 	"github.com/vmihailenco/msgpack/v5"
 
 	"github.com/hiroaki-yamamoto/object-transfer/go/errors"
-	"github.com/hiroaki-yamamoto/object-transfer/go/interfaces"
+	"github.com/hiroaki-yamamoto/object-transfer/go/brokers/interfaces"
 	"github.com/hiroaki-yamamoto/object-transfer/go/subscriber"
 )
 
