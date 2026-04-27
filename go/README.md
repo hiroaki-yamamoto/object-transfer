@@ -38,7 +38,7 @@ import (
 
 	nats "github.com/nats-io/nats.go"
 
-	"github.com/hiroaki-yamamoto/object-transfer/go/nats"
+	otNats "github.com/hiroaki-yamamoto/object-transfer/go/brokers/nats"
 	"github.com/hiroaki-yamamoto/object-transfer/go/publisher"
 	"encoding/json"
 )
@@ -65,7 +65,7 @@ func main() {
 	}
 
 	// Create a publisher for the user.created topic
-	pubCtx := nats.NewPubCtx(js)
+	pubCtx := otNats.NewPubCtx(js)
 	pub := publisher.NewPub[UserCreated](pubCtx, "user.created", json.Marshal)
 
 	// Publish an event
@@ -88,7 +88,7 @@ import (
 
 	nats "github.com/nats-io/nats.go"
 
-	otNats "github.com/hiroaki-yamamoto/object-transfer/go/nats"
+	"github.com/hiroaki-yamamoto/object-transfer/go/brokers/nats/subfetcher"
 	"github.com/hiroaki-yamamoto/object-transfer/go/subscriber"
 	"encoding/json"
 )
@@ -115,24 +115,29 @@ func main() {
 	}
 
 	// Create subscription options
-	options := otNats.NewAckSubOptions(json.Unmarshal, "user-events")
-	options.Subjects("user.created")
-	options.DurableName("user-created-consumer")
-	options.AutoAck(false) // Manual acknowledgment
+	opts := subfetcher.NewAckSubOptions("user-events").
+		Subjects("user.created").
+		DurableName("user-created-consumer")
 
 	// Create sub-fetcher
-	fetcher, err := otNats.NewSubFetcher(js, options)
+	fetcher, err := subfetcher.NewSubFetcher(ctx, js, opts)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	// Create subscriber options (auto-ack disabled for manual acknowledgment)
+	subOpt := subscriber.NewOption().AutoAck(false)
+
 	// Create subscriber
-	sub := subscriber.NewSub[UserCreated](fetcher, fetcher, options)
+	sub, subErr := subscriber.NewSub[UserCreated](fetcher, json.Unmarshal, fetcher, subOpt)
+	if subErr != nil {
+		log.Fatal(subErr)
+	}
 
 	// Subscribe to messages
-	messages, err := sub.Subscribe(ctx)
-	if err != nil {
-		log.Fatal(err)
+	messages, subErr := sub.Subscribe(ctx)
+	if subErr != nil {
+		log.Fatal(subErr)
 	}
 
 	// Process messages
@@ -165,8 +170,8 @@ import (
 	goredis "github.com/redis/go-redis/v9"
 
 	"github.com/hiroaki-yamamoto/object-transfer/go/publisher"
-	redisPublisher "github.com/hiroaki-yamamoto/object-transfer/go/redis/publisher"
-	redisConfig "github.com/hiroaki-yamamoto/object-transfer/go/redis/config"
+	redisPublisher "github.com/hiroaki-yamamoto/object-transfer/go/brokers/redis/publisher"
+	redisConfig "github.com/hiroaki-yamamoto/object-transfer/go/brokers/redis/config"
 	"encoding/json"
 )
 
@@ -185,10 +190,9 @@ func main() {
 	defer client.Close()
 
 	// Create publisher configuration
-	cfg := &redisConfig.PublisherConfig{
-		GroupName:    "user-service",
-		StreamLength: 1000,
-	}
+	cfg := redisConfig.NewPublisherConfig().
+		WithGroupName("user-service").
+		WithStreamLength(1000)
 
 	// Create Redis publisher context
 	rpub := redisPublisher.New(client, cfg)
@@ -216,8 +220,8 @@ import (
 
 	goredis "github.com/redis/go-redis/v9"
 
-	redisSubscriber "github.com/hiroaki-yamamoto/object-transfer/go/redis/subscriber"
-	redisConfig "github.com/hiroaki-yamamoto/object-transfer/go/redis/config"
+	redisSubscriber "github.com/hiroaki-yamamoto/object-transfer/go/brokers/redis/subscriber"
+	redisConfig "github.com/hiroaki-yamamoto/object-transfer/go/brokers/redis/config"
 	"github.com/hiroaki-yamamoto/object-transfer/go/subscriber"
 	"encoding/json"
 )
@@ -237,21 +241,23 @@ func main() {
 	defer client.Close()
 
 	// Create subscription configuration
-	cfg := &redisConfig.SubscriberConfig{
-		GroupName:    "user-service",
-		ConsumerName: "user-service-1",
-	}
+	cfg := redisConfig.NewSubscriberConfig("user.created").
+		WithGroupName("user-service").
+		WithConsumerName("user-service-1")
 
 	// Create Redis subscriber
 	rsub := redisSubscriber.New(client, cfg)
 
 	// Create subscriber
-	sub := subscriber.NewSub[UserCreated](rsub, rsub, rsub)
+	sub, subErr := subscriber.NewSub[UserCreated](rsub, json.Unmarshal, rsub, subscriber.NewOption())
+	if subErr != nil {
+		log.Fatal(subErr)
+	}
 
 	// Subscribe to messages
-	messages, err := sub.Subscribe(ctx)
-	if err != nil {
-		log.Fatal(err)
+	messages, subErr := sub.Subscribe(ctx)
+	if subErr != nil {
+		log.Fatal(subErr)
 	}
 
 	// Process messages
@@ -308,15 +314,13 @@ if err != nil {
 ### Automatic Acknowledgment (NATS)
 
 ```go
-options := nats.NewAckSubOptions(json.Unmarshal, "events")
-options.AutoAck(true) // Messages are acked automatically
+subOpt := subscriber.NewOption().AutoAck(true) // Messages are acked automatically
 ```
 
 ### Manual Acknowledgment
 
 ```go
-options := nats.NewAckSubOptions(json.Unmarshal, "events")
-options.AutoAck(false) // You control when to ack
+subOpt := subscriber.NewOption().AutoAck(false) // You control when to ack
 
 for msg := range messages {
 	if msg.Item != nil {
@@ -384,7 +388,9 @@ for msg := range messages {
 
 Provides durable, scalable message streaming with consumer groups and acknowledgment tracking.
 
-- Package: `github.com/hiroaki-yamamoto/object-transfer/go/nats`
+- Packages:
+  - `github.com/hiroaki-yamamoto/object-transfer/go/brokers/nats`
+  - `github.com/hiroaki-yamamoto/object-transfer/go/brokers/nats/subfetcher`
 - Dependencies: `github.com/nats-io/nats.go`
 
 ### Redis
@@ -392,8 +398,8 @@ Provides durable, scalable message streaming with consumer groups and acknowledg
 Uses Redis Streams for durable message storage with consumer group support.
 
 - Packages:
-  - `github.com/hiroaki-yamamoto/object-transfer/go/redis/publisher`
-  - `github.com/hiroaki-yamamoto/object-transfer/go/redis/subscriber`
+  - `github.com/hiroaki-yamamoto/object-transfer/go/brokers/redis/publisher`
+  - `github.com/hiroaki-yamamoto/object-transfer/go/brokers/redis/subscriber`
 - Dependencies: `github.com/redis/go-redis/v9`
 
 ## Testing

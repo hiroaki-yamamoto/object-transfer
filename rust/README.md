@@ -47,13 +47,13 @@ use std::sync::Arc;
 use futures::StreamExt;
 use serde::{Serialize, Deserialize};
 use object_transfer::{
-  encoder::json::JSONEncoder,
-  encoder::json::JSONDecoder,
+  encoders::JSONEncoder,
+  encoders::JSONDecoder,
   Pub, Sub,
   SubOpt,
   traits::{PubTrait, SubTrait},
 };
-use object_transfer::nats::{SubFetcherOpt, SubFetcher};
+use object_transfer::brokers::nats::{SubFetcherOpt, SubFetcher};
 
 // Define a data structure that will be transmitted via message broker
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -111,7 +111,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ## Custom Serialization Formats
 
-The library supports any serialization format by implementing the [`Encoder`](src/encoder/traits.rs) and [`Decoder`](src/encoder/traits.rs) traits.
+The library supports any serialization format by implementing the [`Encoder`](src/encoders/traits.rs) and [`Decoder`](src/encoders/traits.rs) traits.
 This "any-format" design allows you to use JSON, MessagePack, Protocol Buffers, CBOR, or any custom format without modifying the library.
 
 ### Implementing a Custom Encoder and Decoder
@@ -121,7 +121,7 @@ Here's an example of implementing a simple plain-text encoder:
 ```rust
 use bytes::Bytes;
 use serde::Serialize;
-use object_transfer::encoder::Encoder;
+use object_transfer::encoders::Encoder;
 
 #[derive(Serialize)]
 struct MyData {
@@ -148,7 +148,7 @@ Implement the corresponding decoder:
 ```rust
 use bytes::Bytes;
 use serde::de::DeserializeOwned;
-use object_transfer::encoder::Decoder;
+use object_transfer::encoders::Decoder;
 use std::num::ParseIntError;
 
 #[derive(Debug)]
@@ -228,14 +228,15 @@ Since the encoder and decoder are passed as parameters, you can select the forma
 ```rust,no_run
 use std::sync::Arc;
 use object_transfer::{
-  encoder::json::JSONEncoder,
-  encoder::json::JSONDecoder,
-  encoder::msgpack::{MessagePackEncoder, MessagePackDecoder},
+  encoders::JSONEncoder,
+  encoders::JSONDecoder,
+  encoders::MessagePackEncoder,
+  encoders::MessagePackDecoder,
   Pub, Sub, SubOpt,
   traits::PubTrait,
 };
 
-fn get_encoder(format: &str) -> Arc<dyn object_transfer::encoder::Encoder<Item = MyData> + Send + Sync> {
+fn get_encoder(format: &str) -> Arc<dyn object_transfer::encoders::Encoder<Item = MyData> + Send + Sync> {
     match format {
         "json" => Arc::new(JSONEncoder::new()),
         "msgpack" => Arc::new(MessagePackEncoder::new()),
@@ -264,5 +265,5 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 The library provides built-in encoders/decoders for common formats (when features are enabled):
 
-- **JSON** (feature `json`): [`JSONEncoder`](src/encoder/json.rs) and [`JSONDecoder`](src/encoder/json.rs)
-- **MessagePack** (feature `msgpack`): [`MessagePackEncoder`](src/encoder/msgpack.rs) and [`MessagePackDecoder`](src/encoder/msgpack.rs)
+- **JSON** (feature `json`): [`JSONEncoder`](src/encoders/json.rs) and [`JSONDecoder`](src/encoders/json.rs)
+- **MessagePack** (feature `msgpack`): [`MessagePackEncoder`](src/encoders/msgpack.rs) and [`MessagePackDecoder`](src/encoders/msgpack.rs)
