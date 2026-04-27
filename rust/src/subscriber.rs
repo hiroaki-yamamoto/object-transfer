@@ -193,13 +193,13 @@ where
   > {
     let messages = self.ctx.subscribe().await?.map_err(SubError::from);
     let stream = messages.and_then(async move |(msg, acker)| {
-      if self.options.auto_ack {
-        acker.ack().map_err(|e| SubError::AckError(e)).await?;
-      }
       let data = self
         .decoder
         .decode(msg)
         .map_err(|e| SubError::from(DecodeError::new(e)))?;
+      if self.options.auto_ack {
+        acker.ack().map_err(|e| SubError::AckError(e)).await?;
+      }
       Ok((data, acker))
     });
     Ok(Box::pin(stream))
@@ -307,7 +307,10 @@ mod test {
     let ctx: Arc<dyn SubBrokerTrait + Send + Sync> =
       Arc::new(SubscribeMock::new(data));
     let mut decoder = MockDecoder::new();
-    decoder.expect_decode().never();
+    decoder.expect_decode().once().returning(|_| {
+      let entity = TestEntity::new(0, "Test");
+      Ok(entity)
+    });
     let options = SubOpt::new().auto_ack(true);
     let subscribe: Sub<TestEntity, _> = Sub::new(
       ctx,
