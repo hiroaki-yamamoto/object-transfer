@@ -5,10 +5,18 @@ on:
     branches: [ master ]
     paths:
       - "go/**"
+      - "go.work"
+      - "go.work.sum"
+      - "docker-compose.yml"
+      - "Makefile"
       - ".github/workflows/test_go.yml"
   pull_request:
     paths:
       - "go/**"
+      - "go.work"
+      - "go.work.sum"
+      - "docker-compose.yml"
+      - "Makefile"
       - ".github/workflows/test_go.yml"
 
 jobs:
