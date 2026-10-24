@@ -3,7 +3,7 @@ module github.com/hiroaki-yamamoto/object-transfer/go
 go 1.26.2
 
 require (
-	github.com/nats-io/nats.go v1.54.0
+	github.com/nats-io/nats.go v1.55.0
 	github.com/onsi/ginkgo/v2 v2.33.1
 	github.com/onsi/gomega v1.44.0
 	github.com/redis/go-redis/v9 v9.23.0
