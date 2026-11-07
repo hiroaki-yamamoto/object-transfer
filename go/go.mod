@@ -4,7 +4,7 @@ go 1.26.2
 
 require (
 	github.com/nats-io/nats.go v1.55.0
-	github.com/onsi/ginkgo/v2 v2.33.1
+	github.com/onsi/ginkgo/v2 v2.34.0
 	github.com/onsi/gomega v1.44.0
 	github.com/redis/go-redis/v9 v9.23.0
 	github.com/vmihailenco/msgpack/v5 v5.4.1
